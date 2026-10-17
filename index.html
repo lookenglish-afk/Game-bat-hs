@@ -3,1686 +3,1228 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sổ Đầu Bài Kỳ Thú 3D - Cô Giáo Rượt Đuổi Trả Bài</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Three.js CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- Google Fonts & Font Awesome Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@700&family=Nunito:wght@400;600;700;800;900&family=Signika+Negative:wght@700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Canvas Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-
+  <title>Game Rượt Đuổi Gọi Tên Trả Bài 3D</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Bungee&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Nunito', sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-      overflow: hidden;
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
-      background-color: #0f172a;
+      user-select: none;
     }
-    .font-signika { font-family: 'Signika Negative', cursive, sans-serif; }
-    .font-chibi { font-family: 'Comfortaa', cursive, sans-serif; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Nunito', sans-serif;
+      background: #0f172a;
+    }
 
-    #webgl-canvas {
+    #game-container {
       position: absolute;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Bảng điều khiển phía trên */
+    .top-bar {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      background: rgba(15, 23, 42, 0.85);
+      padding: 10px 20px;
+      border-radius: 40px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      border: 2px solid #f59e0b;
+      z-index: 10;
+      align-items: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      font-size: 15px;
+      font-weight: 800;
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(245, 158, 11, 0.4);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.6);
+      filter: brightness(1.1);
+    }
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-chase {
+      background: linear-gradient(135deg, #ef4444, #b91c1c);
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5);
+      font-size: 16px;
+      padding: 10px 24px;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .control-group select {
+      background: #1e293b;
+      color: #fef08a;
+      border: 1px solid #eab308;
+      border-radius: 12px;
+      padding: 6px 12px;
+      font-weight: 800;
+      font-size: 14px;
       outline: none;
+      cursor: pointer;
+    }
+
+    /* Các nhãn tên & bóng thoại 3D chiếu lên màn hình */
+    .overhead-tag {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      white-space: nowrap;
+      transition: opacity 0.3s;
+      z-index: 5;
+    }
+    .tag-name {
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 10px;
+      border: 1.5px solid #38bdf8;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+    .tag-teacher {
+      background: linear-gradient(90deg, #ef4444, #b91c1c);
+      border-color: #fef08a;
+      font-size: 13px;
+      padding: 3px 12px;
+    }
+    .chat-bubble {
+      background: #fff;
+      color: #1e293b;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 4px 10px;
+      border-radius: 14px;
+      margin-bottom: 5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      border: 2px solid #ef4444;
+      position: relative;
+      animation: popBubble 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+    .chat-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px 6px 0;
+      border-style: solid;
+      border-color: #fff transparent;
       display: block;
+      width: 0;
+    }
+    @keyframes popBubble {
+      0% { transform: scale(0.4); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
-    /* Hiệu ứng hào quang nút */
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 18px rgba(239, 68, 68, 0.7), inset 0 0 12px rgba(254, 240, 138, 0.6); }
-      50% { box-shadow: 0 0 38px rgba(245, 158, 11, 0.95), inset 0 0 24px rgba(254, 240, 138, 0.9); }
+    /* Sổ Đầu Bài Popup (Thiết kế giống chuẩn ảnh mẫu 1) */
+    #notebook-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(6px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+      animation: fadeIn 0.4s ease;
     }
-    .pulse-btn {
-      animation: pulse-glow 2s infinite ease-in-out;
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
-    /* Khung sách Sổ Đầu Bài */
-    .book-shadow {
-      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.7), 0 0 0 8px #991b1b, 0 0 0 14px #f59e0b;
+    .notebook-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
     }
 
-    /* Tùy chỉnh thanh trượt số lượng */
-    input[type=range] {
-      accent-color: #f59e0b;
+    .notebook-badge-top {
+      background: linear-gradient(135deg, #991b1b, #7f1d1d);
+      color: #fef08a;
+      border: 3px solid #f59e0b;
+      border-radius: 30px;
+      padding: 8px 28px;
+      font-size: 20px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      position: absolute;
+      top: -24px;
+      z-index: 10;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .notebook-book {
+      width: 680px;
+      height: 410px;
+      background: #fdfbf7;
+      border-radius: 28px;
+      border: 10px solid #851e1e;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.06);
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Gáy sổ kim loại chính giữa */
+    .notebook-spine {
+      width: 22px;
+      height: 100%;
+      background: repeating-linear-gradient(
+        to bottom,
+        #cbd5e1 0px,
+        #94a3b8 10px,
+        #475569 16px,
+        #cbd5e1 22px
+      );
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
+      z-index: 3;
+    }
+
+    .notebook-page {
+      flex: 1;
+      padding: 35px 25px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
+      background-size: 20px 20px;
+    }
+
+    /* Huy hiệu lượt ở trang phải */
+    .turn-badge {
+      background: #fef08a;
+      color: #854d0e;
+      border: 2px solid #facc15;
+      border-radius: 20px;
+      padding: 4px 18px;
+      font-weight: 900;
+      font-size: 14px;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 12px;
+    }
+
+    .avatar-box {
+      width: 140px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 6px 0;
+    }
+
+    .teacher-badge {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      color: white;
+      padding: 6px 26px;
+      border-radius: 20px;
+      font-weight: 900;
+      font-size: 15px;
+      box-shadow: 0 4px 10px rgba(220, 38, 38, 0.4);
+      border: 2px solid #fecaca;
+    }
+
+    .student-caught-name {
+      font-size: 26px;
+      font-weight: 900;
+      color: #991b1b;
+      margin-top: 5px;
+      text-align: center;
+      text-shadow: 1px 1px 0px rgba(0,0,0,0.06);
+    }
+
+    .call-btn {
+      background: #fff;
+      color: #dc2626;
+      border: 2.5px solid #dc2626;
+      border-radius: 25px;
+      padding: 6px 22px;
+      font-weight: 900;
+      font-size: 14px;
+      margin-top: 10px;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+    }
+
+    .btn-next-turn {
+      margin-top: 22px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #451a03;
+      font-size: 17px;
+      font-weight: 900;
+      border: 3px solid #fef08a;
+      border-radius: 30px;
+      padding: 12px 35px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+      transition: all 0.2s;
+    }
+    .btn-next-turn:hover {
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+
+    /* Modal Chỉnh Sửa Danh Sách */
+    #roster-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 60;
+    }
+    .roster-card {
+      background: #1e293b;
+      color: #fff;
+      border-radius: 20px;
+      padding: 25px;
+      width: 440px;
+      max-width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      border: 2px solid #38bdf8;
+    }
+    .roster-card h2 {
+      margin-bottom: 12px;
+      color: #38bdf8;
+      font-size: 20px;
+    }
+    .roster-card textarea {
+      width: 100%;
+      height: 160px;
+      background: #0f172a;
+      color: #f8fafc;
+      border: 1.5px solid #475569;
+      border-radius: 12px;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+    }
+    .roster-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 15px;
     }
   </style>
+  <!-- Three.js & TWEEN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 </head>
-<body class="w-screen h-screen relative select-none">
+<body>
 
-  <!-- ================= CANVAS 3D THREE.JS ================= -->
-  <canvas id="webgl-canvas"></canvas>
+  <div id="game-container"></div>
 
-  <!-- ================= LỚP UI HEADER & ĐIỀU KHIỂN ================= -->
-  <header class="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center z-20 pointer-events-none">
-    
-    <!-- Huy hiệu Game & Thông tin lớp -->
-    <div class="pointer-events-auto flex items-center space-x-2.5 bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-2xl border-2 border-amber-400">
-      <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 flex items-center justify-center text-white text-lg sm:text-xl shadow-md border border-yellow-200">
-        <i class="fa-solid fa-book-bookmark"></i>
-      </div>
-      <div>
-        <div class="flex items-center gap-1.5">
-          <h1 class="text-sm sm:text-base font-black text-amber-300 font-signika tracking-wide">SỔ ĐẦU BÀI 3D KỲ THÚ</h1>
-          <span class="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-md uppercase">Anime Chibi</span>
-        </div>
-        <div class="text-[11px] sm:text-xs text-slate-300 font-bold flex items-center gap-2">
-          <span>Lớp: <strong id="current-class-name" class="text-yellow-300">12A1 Chuyên</strong></span>
-          <span>•</span>
-          <span>Sĩ số: <strong id="student-count-badge" class="text-sky-300">35</strong></span>
-          <span>•</span>
-          <span>Đang chạy: <strong id="running-count-badge" class="text-emerald-400">16</strong></span>
-        </div>
-      </div>
+  <!-- Thanh công cụ điều khiển -->
+  <div class="top-bar">
+    <button class="btn btn-chase" id="btn-start-chase">🔥 BẮT ĐẦU RƯỢT ĐUỔI</button>
+    <div class="control-group">
+      <span>Bắt ngẫu nhiên:</span>
+      <select id="select-caught-count">
+        <option value="1">1 bạn</option>
+        <option value="2">2 bạn</option>
+        <option value="3">3 bạn</option>
+      </select>
     </div>
+    <button class="btn" id="btn-edit-roster">📋 Danh Sách HS (<span id="count-display">25</span>)</button>
+  </div>
 
-    <!-- Cụm nút công cụ: Chế độ Camera, Âm thanh, Danh sách lớp, Lịch sử, Toàn màn hình -->
-    <div class="pointer-events-auto flex items-center space-x-2">
-      <!-- Đổi góc Camera 3D -->
-      <button id="btn-toggle-camera" onclick="cycleCameraView()" class="h-10 sm:h-11 px-3 rounded-2xl bg-slate-900/85 backdrop-blur text-amber-300 border-2 border-slate-700 hover:border-amber-400 active:scale-95 shadow-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition">
-        <i class="fa-solid fa-video text-amber-400"></i>
-        <span id="cam-mode-label" class="hidden sm:inline">Cam: Theo Dõi</span>
-      </button>
-
-      <!-- Nút Âm Thanh -->
-      <button id="btn-sound-toggle" onclick="toggleSound()" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-900/85 backdrop-blur text-slate-200 border-2 border-slate-700 hover:border-amber-400 active:scale-95 shadow-lg flex items-center justify-center text-sm sm:text-base transition" title="Bật/Tắt âm thanh">
-        <i id="sound-icon" class="fa-solid fa-volume-high text-amber-400"></i>
-      </button>
-
-      <!-- Nút Lịch Sử Trả Bài -->
-      <button onclick="openHistoryModal()" class="h-10 sm:h-11 px-3 rounded-2xl bg-slate-900/85 backdrop-blur text-slate-200 border-2 border-slate-700 hover:border-blue-400 active:scale-95 shadow-lg flex items-center gap-1.5 text-xs sm:text-sm font-bold transition">
-        <i class="fa-solid fa-clock-rotate-left text-blue-400"></i>
-        <span class="hidden md:inline">Lịch Sử</span>
-        <span id="history-badge" class="bg-blue-600 text-white text-[10px] px-1.5 py-0.2 rounded-full">0</span>
-      </button>
-
-      <!-- Nút Quản Lý Danh Sách Lớp -->
-      <button onclick="openRosterModal()" class="h-10 sm:h-11 px-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold shadow-lg hover:brightness-110 active:scale-95 border-2 border-yellow-200 flex items-center gap-1.5 text-xs sm:text-sm transition">
-        <i class="fa-solid fa-users-gear text-yellow-100"></i>
-        <span class="hidden sm:inline">Danh Sách Lớp</span>
-      </button>
-
-      <!-- Nút Toàn Màn Hình -->
-      <button onclick="toggleFullScreen()" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-slate-900/85 backdrop-blur text-slate-200 border-2 border-slate-700 hover:border-emerald-400 active:scale-95 shadow-lg flex items-center justify-center text-sm transition" title="Toàn màn hình">
-        <i id="fullscreen-icon" class="fa-solid fa-expand text-emerald-400"></i>
-      </button>
-    </div>
-
-  </header>
-
-  <!-- ================= THANH ĐIỀU KHIỂN DƯỚI ĐÁY MÀN HÌNH ================= -->
-  <footer class="absolute bottom-4 left-0 right-0 flex flex-col items-center justify-center z-20 pointer-events-none px-4">
-    
-    <!-- Hộp điều chỉnh Số lượng HS trên sân & Chế độ gọi -->
-    <div class="pointer-events-auto flex flex-wrap items-center justify-center gap-3 sm:gap-6 bg-slate-900/90 backdrop-blur-md px-5 py-2.5 rounded-2xl mb-3 text-white text-xs sm:text-sm border-2 border-slate-700 shadow-2xl">
-      <!-- Thanh trượt số lượng học sinh chạy trên sân -->
-      <div class="flex items-center gap-2">
-        <i class="fa-solid fa-person-running text-amber-400 text-base"></i>
-        <span class="font-bold text-amber-200">Số HS đang chạy:</span>
-        <input type="range" id="slider-crowd-size" min="3" max="35" value="16" class="w-24 sm:w-32 cursor-pointer" oninput="onCrowdSliderChange(this.value)">
-        <span id="slider-count-display" class="font-black text-amber-300 w-6 text-center">16</span>
-      </div>
-
-      <span class="hidden sm:inline text-slate-600">|</span>
-
-      <!-- Checkbox Không gọi trùng -->
-      <label class="flex items-center gap-2 cursor-pointer select-none">
-        <input type="checkbox" id="chk-no-repeat" checked class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
-        <span class="font-bold text-slate-200">Không gọi trùng bạn cũ</span>
-      </label>
-
-      <span class="hidden sm:inline text-slate-600">|</span>
-
-      <!-- Thời gian rượt -->
-      <div class="flex items-center gap-1.5 text-slate-300">
-        <i class="fa-solid fa-stopwatch text-amber-400"></i>
-        <span>Thời gian:</span>
-        <select id="select-duration" class="bg-slate-800 text-amber-300 text-xs font-bold rounded-lg px-2 py-1 border border-slate-600 focus:outline-none">
-          <option value="3.5">3.5 giây</option>
-          <option value="5" selected>5 giây (Kịch tính)</option>
-          <option value="7">7 giây (Dài hơi)</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- NÚT BẮT ĐẦU RƯỢT ĐUỔI CHÍNH TO & NỔI BẬT -->
-    <button id="btn-start-chase" onclick="startChasingSequence()" class="pointer-events-auto pulse-btn relative group px-8 sm:px-14 py-3.5 sm:py-4 bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full font-black text-white text-lg sm:text-2xl tracking-wider shadow-2xl border-4 border-yellow-300 active:scale-95 hover:scale-105 transition-all flex items-center gap-3">
-      <span class="text-2xl sm:text-3xl filter drop-shadow">🏃‍♀️💨</span>
-      <span class="drop-shadow-md">CÔ GIÁO BẮT ĐẦU RƯỢT ĐUỔI!</span>
-      <i class="fa-solid fa-angles-right text-yellow-200 text-lg group-hover:translate-x-1.5 transition"></i>
-    </button>
-
-    <p class="pointer-events-none text-[11px] sm:text-xs font-bold text-amber-200 mt-2 bg-slate-900/80 px-3 py-1 rounded-full backdrop-blur border border-slate-700 shadow">
-      💡 Phím tắt: Bấm <strong class="text-yellow-400">[Space]</strong> để phóng rượt đuổi • Kéo chuột/chạm xoay góc nhìn 3D tự do
-    </p>
-
-  </footer>
-
-  <!-- ================= POPUP CUỐN SỔ ĐẦU BÀI (CHUẨN ẢNH 1) ================= -->
-  <div id="result-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 opacity-0 pointer-events-none transition-all duration-300 p-3 sm:p-6">
-    <div id="book-wrapper" class="relative w-full max-w-2xl transform scale-90 transition-all duration-500 flex flex-col items-center">
-      
-      <!-- Đỉnh cuốn sổ: Huy hiệu "SỔ ĐẦU BÀI" viền vàng -->
-      <div class="relative -bottom-6 z-20 flex justify-center">
-        <div class="px-7 py-2 bg-gradient-to-r from-red-800 via-red-600 to-red-800 text-yellow-300 font-extrabold text-base sm:text-xl rounded-full border-4 border-amber-300 shadow-2xl flex items-center gap-2 tracking-wider">
-          <i class="fa-solid fa-book-bookmark text-yellow-200 text-lg sm:text-xl"></i>
-          <span class="font-signika">SỔ ĐẦU BÀI</span>
-          <i class="fa-solid fa-feather-pointed text-yellow-200"></i>
-        </div>
-      </div>
-
-      <!-- Thân CUỐN SỔ ĐẦU BÀI MỞ RA (Hai trang Trái - Phải y ảnh 1) -->
-      <div class="w-full bg-[#fdfbf7] rounded-3xl border-8 border-red-700 p-4 sm:p-8 pt-8 book-shadow relative overflow-hidden flex flex-col justify-between">
-        
-        <!-- Hoa văn viền vàng sang trọng -->
-        <div class="absolute inset-2 border-2 border-amber-400 rounded-2xl pointer-events-none opacity-80"></div>
-        <div class="absolute inset-3 border border-dashed border-amber-300 rounded-xl pointer-events-none"></div>
-
-        <!-- Lò xo gáy sổ ở giữa -->
-        <div class="absolute left-1/2 top-4 bottom-4 -translate-x-1/2 w-8 flex flex-col justify-around items-center pointer-events-none z-10 opacity-70">
-          <div class="w-3 h-5 bg-amber-200 border-2 border-amber-600 rounded-full shadow-inner"></div>
-          <div class="w-3 h-5 bg-amber-200 border-2 border-amber-600 rounded-full shadow-inner"></div>
-          <div class="w-3 h-5 bg-amber-200 border-2 border-amber-600 rounded-full shadow-inner"></div>
-          <div class="w-3 h-5 bg-amber-200 border-2 border-amber-600 rounded-full shadow-inner"></div>
-          <div class="w-3 h-5 bg-amber-200 border-2 border-amber-600 rounded-full shadow-inner"></div>
+  <!-- Cửa sổ Sổ Đầu Bài (Theo ảnh 1) -->
+  <div id="notebook-overlay">
+    <div class="notebook-container">
+      <div class="notebook-badge-top">📕 SỔ ĐẦU BÀI</div>
+      <div class="notebook-book">
+        <!-- Trang trái: Cô Giáo -->
+        <div class="notebook-page">
+          <div class="avatar-box" id="teacher-canvas-box"></div>
+          <div class="teacher-badge">CÔ GIÁO</div>
         </div>
 
-        <!-- 2 TRANG SỔ MỞ (TRÁI: CÔ GIÁO - PHẢI: HỌC SINH BỊ BẮT) -->
-        <div class="grid grid-cols-2 gap-2 sm:gap-6 py-4 relative z-0">
-          
-          <!-- TRANG TRÁI: CÔ GIÁO CẦM SỔ ĐỎ CƯỜI TƯƠI -->
-          <div class="flex flex-col items-center justify-center p-2 sm:p-4 text-center">
-            <div class="w-28 h-36 sm:w-36 sm:h-48 relative drop-shadow-md flex items-center justify-center">
-              <svg viewBox="0 0 110 130" class="w-full h-full">
-                <ellipse cx="55" cy="120" rx="32" ry="7" fill="rgba(0,0,0,0.18)" />
-                <path d="M46,88 L44,116" stroke="#1e293b" stroke-width="7" stroke-linecap="round"/>
-                <path d="M44,116 L38,121 L48,121 Z" fill="#0f172a"/>
-                <path d="M64,88 L66,116" stroke="#1e293b" stroke-width="7" stroke-linecap="round"/>
-                <path d="M66,116 L60,121 L70,121 Z" fill="#0f172a"/>
-                <path d="M38,72 L72,72 L74,92 L36,92 Z" fill="#1e293b"/>
-                <path d="M34,46 C34,44 76,44 76,46 L78,74 L32,74 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="2"/>
-                <polygon points="55,46 48,64 62,64" fill="#ffffff"/>
-                <path d="M72,50 L88,38 L96,25" stroke="#38bdf8" stroke-width="6" stroke-linecap="round" fill="none"/>
-                <circle cx="96" cy="24" r="5" fill="#fcd34d"/>
-                <!-- Cuốn sổ đỏ giơ cao trên tay -->
-                <g transform="translate(86, 5) rotate(15)">
-                  <rect x="0" y="0" width="22" height="30" rx="3" fill="#b91c1c" stroke="#f59e0b" stroke-width="2" />
-                  <rect x="2" y="2" width="18" height="26" fill="none" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2,2"/>
-                  <text x="11" y="12" fill="#fef08a" font-size="5" font-weight="bold" text-anchor="middle">SỔ</text>
-                  <text x="11" y="18" fill="#fef08a" font-size="4" font-weight="bold" text-anchor="middle">ĐẦU BÀI</text>
-                </g>
-                <path d="M36,52 L26,68 L32,74" stroke="#38bdf8" stroke-width="6" stroke-linecap="round" fill="none"/>
-                <circle cx="32" cy="74" r="5" fill="#fcd34d"/>
-                <!-- Khuôn mặt hiền từ Chibi -->
-                <circle cx="55" cy="30" r="21" fill="#fde68a" stroke="#f59e0b" stroke-width="1.2"/>
-                <circle cx="42" cy="36" r="3.5" fill="#f43f5e" opacity="0.6"/>
-                <circle cx="68" cy="36" r="3.5" fill="#f43f5e" opacity="0.6"/>
-                <!-- Kính cận -->
-                <rect x="38" y="25" width="13" height="10" rx="2" fill="none" stroke="#0f172a" stroke-width="2"/>
-                <rect x="59" y="25" width="13" height="10" rx="2" fill="none" stroke="#0f172a" stroke-width="2"/>
-                <line x1="51" y1="29" x2="59" y2="29" stroke="#0f172a" stroke-width="2"/>
-                <circle cx="44" cy="30" r="2.5" fill="#0f172a"/>
-                <circle cx="45" cy="29" r="1" fill="#ffffff"/>
-                <circle cx="65" cy="30" r="2.5" fill="#0f172a"/>
-                <circle cx="66" cy="29" r="1" fill="#ffffff"/>
-                <path d="M49,38 Q55,44 61,38" stroke="#be123c" stroke-width="2" fill="none" stroke-linecap="round"/>
-                <!-- Tóc búi sang trọng -->
-                <path d="M33,26 C33,10 44,6 55,6 C66,6 77,10 77,26 C75,15 67,14 55,15 C43,14 35,15 33,26 Z" fill="#475569"/>
-                <circle cx="55" cy="5" r="8" fill="#334155"/>
-              </svg>
-            </div>
-            <!-- Bảng tên CÔ GIÁO nền đỏ bo tròn giống ảnh 1 -->
-            <div class="mt-2 px-4 py-1 bg-gradient-to-r from-red-800 to-rose-700 text-white font-extrabold text-xs sm:text-sm rounded-full shadow border-2 border-red-300 uppercase tracking-wider">
-              CÔ GIÁO
-            </div>
-            <p class="text-[11px] text-slate-500 font-semibold mt-1">"Mời em lên bảng trả bài nha!"</p>
-          </div>
+        <div class="notebook-spine"></div>
 
-          <!-- TRANG PHẢI: HỌC SINH ĐƯỢC CHỌN (VŨ BÌNH DƯƠNG / ĐỨC KHIÊM) -->
-          <div class="flex flex-col items-center justify-between p-2 sm:p-4 text-center">
-            
-            <!-- Huy hiệu LƯỢT 1 giống hệt ảnh 1 -->
-            <div class="px-4 py-1 bg-gradient-to-r from-amber-100 to-yellow-200 border-2 border-amber-400 text-amber-900 font-black text-xs sm:text-sm rounded-full shadow-sm flex items-center gap-1">
-              <span>⚡</span>
-              <span id="modal-turn-text">LƯỢT 1</span>
-              <span>⚡</span>
-            </div>
-
-            <!-- Avatar Chibi Học sinh toát mồ hôi hột hệt ảnh 1 -->
-            <div class="w-28 h-36 sm:w-36 sm:h-44 relative drop-shadow-lg flex items-center justify-center my-1">
-              <svg viewBox="0 0 100 120" class="w-full h-full">
-                <ellipse cx="50" cy="112" rx="26" ry="6" fill="rgba(0,0,0,0.18)" />
-                <path d="M42,85 L35,106" stroke="#1e293b" stroke-width="6" stroke-linecap="round"/>
-                <ellipse cx="33" cy="106" rx="6" ry="4" fill="#ffffff" stroke="#000" stroke-width="1.5"/>
-                <path d="M58,85 L65,106" stroke="#1e293b" stroke-width="6" stroke-linecap="round"/>
-                <ellipse cx="67" cy="106" rx="6" ry="4" fill="#ffffff" stroke="#000" stroke-width="1.5"/>
-                <!-- Áo len đồng phục be/kem giống ảnh -->
-                <path d="M35,60 C35,48 65,48 65,60 L68,85 L32,85 Z" fill="#fef3c7" stroke="#b45309" stroke-width="2"/>
-                <polygon points="50,58 44,68 56,68" fill="#1e3a8a"/>
-                <circle cx="50" cy="58" r="3" fill="#dc2626"/>
-                <path d="M35,64 L24,52 L32,38" stroke="#fef3c7" stroke-width="6" stroke-linecap="round" fill="none"/>
-                <circle cx="33" cy="37" r="4.5" fill="#fed7aa"/>
-                <path d="M65,64 L76,74 L84,70" stroke="#fef3c7" stroke-width="6" stroke-linecap="round" fill="none"/>
-                <circle cx="85" cy="70" r="4.5" fill="#fed7aa"/>
-                <!-- Khuôn mặt hốt hoảng toát mồ hôi hột -->
-                <circle cx="50" cy="38" r="21" fill="#fed7aa" stroke="#f97316" stroke-width="1.5"/>
-                <path d="M68,26 Q73,31 68,36 Q63,31 68,26 Z" fill="#38bdf8"/>
-                <path d="M28,30 Q32,34 28,38 Q24,34 28,30 Z" fill="#38bdf8"/>
-                <path d="M38,36 Q43,30 48,36" stroke="#1e293b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                <path d="M54,36 Q59,30 64,36" stroke="#1e293b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                <!-- Miệng méo dở khóc dở cười -->
-                <path d="M42,48 Q46,44 50,47 Q54,50 58,45" stroke="#991b1b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-                <!-- Tóc cột đuôi gà Anime -->
-                <path d="M28,38 C28,18 40,14 50,14 C60,14 72,18 72,38 C70,24 62,23 50,24 C38,23 30,24 28,38 Z" fill="#1e293b"/>
-                <path d="M28,26 C15,22 10,34 12,48 C16,42 22,38 28,34 Z" fill="#1e293b"/>
-                <circle cx="27" cy="28" r="4" fill="#f43f5e"/>
-              </svg>
-            </div>
-
-            <!-- Tên học sinh màu đỏ to rõ nét -->
-            <div class="my-1">
-              <h2 id="modal-student-name" class="text-xl sm:text-3xl font-black text-red-700 tracking-wide font-signika drop-shadow-sm leading-tight">
-                Vũ Bình Dương
-              </h2>
-              <div id="modal-student-status" class="text-[11px] font-bold text-amber-800 bg-amber-100/90 border border-amber-300 px-3 py-0.5 rounded-full inline-block mt-0.5">
-                🎯 Số thứ tự: #18
-              </div>
-            </div>
-
-            <!-- Nút ★ MỜI LÊN BẢNG ★ đúng ảnh 1 -->
-            <div class="w-full">
-              <button onclick="sfxApplause()" class="w-full py-2 sm:py-2.5 px-4 bg-gradient-to-r from-red-600 via-rose-500 to-red-600 hover:from-red-700 hover:to-rose-600 text-white font-black text-xs sm:text-base rounded-xl shadow-lg border-2 border-yellow-300 flex items-center justify-center gap-1.5 active:scale-95 transition">
-                <i class="fa-solid fa-star text-yellow-300"></i>
-                <span class="tracking-wider">MỜI LÊN BẢNG</span>
-                <i class="fa-solid fa-star text-yellow-300"></i>
-              </button>
-            </div>
-
-          </div>
-
+        <!-- Trang phải: Học Sinh Bị Bắt -->
+        <div class="notebook-page">
+          <div class="turn-badge" id="turn-badge-txt">⚡ LƯỢT 1 ⚡</div>
+          <div class="avatar-box" id="student-canvas-box"></div>
+          <div class="student-caught-name" id="student-name-txt">Vũ Bình Dương</div>
+          <div class="call-btn">★ MỜI LÊN BẢNG TRẢ BÀI ★</div>
         </div>
-
-        <!-- THAO TÁC CỦA THẦY CÔ & NÚT GỌI LƯỢT TIẾP THEO -->
-        <div class="border-t-2 border-amber-200 pt-3 mt-1 flex flex-col sm:flex-row items-center justify-between gap-2 z-20">
-          <!-- Chấm điểm -->
-          <div class="flex items-center gap-1.5 w-full sm:w-auto justify-center">
-            <span class="text-xs font-bold text-slate-600 hidden sm:inline">Chấm điểm:</span>
-            <button onclick="gradeStudent(10)" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow">10đ</button>
-            <button onclick="gradeStudent(8)" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow">8đ</button>
-            <button onclick="gradeStudent(5)" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow">5đ</button>
-            <button onclick="gradeStudent(0)" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow">Chưa thuộc</button>
-          </div>
-
-          <!-- Nút Đổi tên khác & Nút Vàng "Gọi Lượt Tiếp Theo" -->
-          <div class="flex items-center gap-2 w-full sm:w-auto justify-center">
-            <button onclick="reRollCurrent()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition">
-              <i class="fa-solid fa-rotate"></i> Đổi bạn khác
-            </button>
-            <button onclick="nextTurnFromModal()" class="px-5 py-2 bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-xs sm:text-sm rounded-xl shadow-md border-2 border-amber-500 flex items-center gap-1.5 active:scale-95 transition">
-              <i class="fa-solid fa-play text-red-600"></i>
-              <span>Gọi Lượt Tiếp Theo</span>
-            </button>
-          </div>
-        </div>
-
       </div>
-
-      <!-- Nút đóng góc sổ -->
-      <button onclick="closeResultModal()" class="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-red-600 hover:bg-red-700 text-white border-2 border-white shadow-xl flex items-center justify-center text-sm font-bold active:scale-90 transition z-30">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
+      <button class="btn-next-turn" id="btn-next-turn">▶ Gọi Lượt Tiếp Theo</button>
     </div>
   </div>
 
-  <!-- ================= MODAL NHẬP DANH SÁCH LỚP ================= -->
-  <div id="roster-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 pointer-events-none transition-all duration-300 p-4">
-    <div class="bg-white rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border-4 border-amber-300 max-h-[90vh] flex flex-col">
-      <div class="flex justify-between items-center pb-3 border-b border-slate-200">
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold">
-            <i class="fa-solid fa-clipboard-user"></i>
-          </div>
-          <div>
-            <h3 class="font-extrabold text-lg text-slate-800">Quản Lý Danh Sách Học Sinh</h3>
-            <p class="text-xs text-slate-500">Dán từ Excel hoặc gõ mỗi dòng 1 tên</p>
-          </div>
-        </div>
-        <button onclick="closeRosterModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <div class="py-3 flex items-center gap-2 flex-wrap">
-        <span class="text-xs font-bold text-slate-600">Lớp mẫu:</span>
-        <button onclick="loadPresetClass('12A1')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-amber-100 font-bold rounded-lg border">12A1 (35 HS)</button>
-        <button onclick="loadPresetClass('11B2')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-amber-100 font-bold rounded-lg border">11B2 (30 HS)</button>
-        <button onclick="loadPresetClass('10C3')" class="px-2.5 py-1 text-xs bg-slate-100 hover:bg-amber-100 font-bold rounded-lg border">10C3 (25 HS)</button>
-      </div>
-
-      <div class="mb-3">
-        <label class="block text-xs font-bold text-slate-700 mb-1">Tên Lớp Học:</label>
-        <input type="text" id="input-classname" value="12A1 Chuyên" class="w-full px-3 py-1.5 text-sm border-2 border-slate-300 rounded-xl focus:border-amber-500 focus:outline-none font-bold text-slate-800">
-      </div>
-
-      <div class="flex-1 overflow-hidden flex flex-col mb-4">
-        <label class="block text-xs font-bold text-slate-700 mb-1 flex justify-between">
-          <span>Danh sách tên:</span>
-          <span id="textarea-counter" class="text-amber-600 font-black">35 học sinh</span>
-        </label>
-        <textarea id="roster-textarea" class="flex-1 w-full min-h-[180px] p-3 text-sm font-semibold border-2 border-slate-300 rounded-xl focus:border-amber-500 focus:outline-none resize-none leading-relaxed bg-slate-50"></textarea>
-      </div>
-
-      <div class="flex justify-between items-center pt-2 border-t border-slate-200">
-        <button onclick="resetDefaultList()" class="px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-300">
-          Khôi phục mặc định
-        </button>
-        <div class="flex gap-2">
-          <button onclick="closeRosterModal()" class="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl">Hủy</button>
-          <button onclick="saveRosterList()" class="px-5 py-2 text-xs font-extrabold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md">
-            Lưu Danh Sách
-          </button>
-        </div>
+  <!-- Modal sửa danh sách học sinh -->
+  <div id="roster-modal">
+    <div class="roster-card">
+      <h2>Danh Sách Học Sinh</h2>
+      <p style="font-size: 13px; color: #94a3b8; margin-bottom: 10px;">Mỗi học sinh cách nhau bởi 1 dòng:</p>
+      <textarea id="roster-textarea"></textarea>
+      <div class="roster-actions">
+        <button class="btn" style="background: #475569;" id="btn-cancel-roster">Đóng</button>
+        <button class="btn" id="btn-save-roster">Lưu & Cập Nhật</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= MODAL LỊCH SỬ ================= -->
-  <div id="history-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 opacity-0 pointer-events-none transition-all duration-300 p-4">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border-4 border-blue-300 max-h-[85vh] flex flex-col">
-      <div class="flex justify-between items-center pb-3 border-b border-slate-200">
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
-            <i class="fa-solid fa-list-check"></i>
-          </div>
-          <div>
-            <h3 class="font-extrabold text-lg text-slate-800">Lịch Sử Lên Bảng</h3>
-            <p class="text-xs text-slate-500">Các lượt kiểm tra bài cũ đã thực hiện</p>
-          </div>
-        </div>
-        <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <div id="history-list-content" class="flex-1 overflow-y-auto py-3 space-y-2 min-h-[220px]"></div>
-
-      <div class="flex justify-between items-center pt-3 border-t border-slate-200">
-        <button onclick="clearHistory()" class="px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-300">
-          Xóa lịch sử
-        </button>
-        <button onclick="closeHistoryModal()" class="px-4 py-1.5 text-xs font-bold text-white bg-slate-800 rounded-xl">Đóng</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- TOAST THÔNG BÁO -->
-  <div id="toast-message" class="fixed top-5 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white px-5 py-2.5 rounded-full shadow-2xl border-2 border-amber-400 font-bold text-sm z-50 opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2">
-    <i class="fa-solid fa-circle-check text-emerald-400"></i>
-    <span id="toast-text">Thông báo</span>
-  </div>
-
-  <!-- ================= TOÀN BỘ SCRIPT 3D THREE.JS & GAME LOGIC ================= -->
   <script>
-    /* ----------------------------------------------------------------
-       1. DANH SÁCH LỚP HỌC MẪU
-    ---------------------------------------------------------------- */
-    const PRESET_CLASSES = {
-      '12A1': [
-        "Vũ Bình Dương", "Trần Đức Khiêm", "Nguyễn Bảo Trâm", "Lê Hoàng Phúc", 
-        "Phạm Minh Đạt", "Đặng Thùy Dung", "Bùi Quốc Khánh", "Ngô Phương Anh", 
-        "Đỗ Thành Nam", "Hoàng Gia Hưng", "Vũ Mai Linh", "Trần Khánh Vy", 
-        "Lê Tuấn Kiệt", "Nguyễn Hương Giang", "Dương Quốc Bảo", "Hồ Nhật Minh", 
-        "Phan Yến Nhi", "Lý Gia Hào", "Trương Thu Hà", "Cao Văn Thắng", 
-        "Võ Ngọc Huyền", "Nguyễn Văn Hùng", "Lê Thu Thảo", "Trần Quang Hải", 
-        "Phạm Diệu Linh", "Bùi Hữu Phước", "Ngô Mỹ Duyên", "Đinh Trọng Nghĩa", 
-        "Tạ Quỳnh Trang", "Nguyễn Thanh Tùng", "Lê Bảo Ngọc", "Phan Anh Quân", 
-        "Chu Thảo My", "Vũ Hoàng Long", "Trần Ánh Tuyết"
-      ],
-      '11B2': [
-        "Nguyễn Văn An", "Trần Minh Quân", "Lê Thị Bích", "Phạm Quốc Dũng",
-        "Hoàng Thị Hoa", "Vũ Anh Tuấn", "Đỗ Mai Phương", "Bùi Tuấn Anh",
-        "Ngô Lan Anh", "Dương Hồng Nhung", "Phan Văn Nam", "Hồ Thị Thảo",
-        "Trương Quang Sáng", "Cao Thu Trang", "Võ Minh Trí", "Lý Kim Ngân",
-        "Đinh Hoàng Long", "Mai Thanh Trúc", "Tạ Đức Duy", "Đoàn Khánh Linh",
-        "Trịnh Gia Huy", "Lưu Bảo Trâm", "Phùng Hải Đăng", "Lâm Mỹ Uyên",
-        "Diệp Thành Danh", "Huỳnh Như Quỳnh", "Trần Viết Khoa", "Nguyễn Hoài Thương",
-        "Lê Quốc Việt", "Phạm Trúc Mai"
-      ],
-      '10C3': [
-        "Nguyễn Thành Đạt", "Lê Diệu Linh", "Phạm Hoàng Sơn", "Trần Cẩm Tú",
-        "Võ Hải Yến", "Đặng Hữu Phước", "Bùi Tuyết Mai", "Hoàng Khắc Tiệp",
-        "Dương Thảo Uyên", "Lý Quốc Thái", "Ngô Bảo Châu", "Trương Gia Hân",
-        "Cao Nhật Duy", "Phan Bích Hợp", "Đinh Vĩnh Khang", "Vũ Ngọc Ánh",
-        "Hồ Phi Hùng", "Đoàn Yến Phượng", "Mai Thế Anh", "Lâm Thiên Hương",
-        "Trịnh Minh Châu", "Tạ Hồng Phát", "Huỳnh Tấn Tài", "Lưu Diễm My",
-        "Nguyễn Trọng Tấn"
-      ]
-    };
+    // Danh sách học sinh mặc định
+    let studentList = [
+      "Vũ Bình Dương", "Đức Khiêm", "Bảo Châu", "Minh Khôi", "Gia Huy",
+      "Hải Yến", "Phương Linh", "Quốc Bảo", "Tuấn Kiệt", "Mai Anh",
+      "Trâm Anh", "Hoàng Long", "Khánh Vy", "Thanh Trúc", "Đăng Khoa",
+      "Quỳnh Nga", "Anh Thư", "Nhật Minh", "Thảo Nhi", "Bảo Trâm",
+      "Tiến Đạt", "Tường Vy", "Đức Phúc", "Hương Giang", "Việt Hùng"
+    ];
 
-    let fullClassRoster = [];
-    let poolStudents = [];
-    let calledHistory = [];
-    let turnCount = 1;
-    let currentSelectedStudent = "";
-    let activeCrowdCount = 16;
+    // Các câu thoại khi chạy rượt đuổi
+    const CHAT_SHOUTS = [
+      "Chạy điiii!", "Cứu tui với!", "Đừng gọi em cô ơi!!",
+      "Chân run quá!", "Vào lớp rồi hú hồn!", "Cô dí tới đít rồi!",
+      "Hôm qua chưa học bài!!", "Tha em cô oiii!", "Trốn mau trốn mau!",
+      "Nhanh lên các bạn!", "May quá tới cửa rồi!"
+    ];
+
+    let currentTurn = 1;
     let isChasing = false;
-    let soundEnabled = true;
+    let students = [];
+    let teacher = null;
+    let caughtStudentObjects = [];
+    let caughtStudentIndexInList = 0;
 
-    /* ----------------------------------------------------------------
-       2. TẠO TEXTURE BILLBOARD BẰNG CANVAS CHO TÊN VÀ NHÃN 3D
-    ---------------------------------------------------------------- */
-    function createTextSprite(text, bgColor = '#dc2626', textColor = '#ffffff', icon = '🏃') {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 128;
-      const ctx = canvas.getContext('2d');
+    // Thiết lập Three.js cho Sân Trường
+    const container = document.getElementById('game-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xbfe3f7);
+    scene.fog = new THREE.FogExp2(0xbfe3f7, 0.007);
 
-      // Bo tròn viền
-      const r = 26;
-      const x = 16, y = 16, w = 480, h = 96;
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+    // Góc nhìn bao quát từ ngoài sân hướng về trường học
+    camera.position.set(0, 22, 68);
+    camera.lookAt(0, 7, -2);
 
-      ctx.fillStyle = bgColor;
-      ctx.fill();
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = '#fef08a';
-      ctx.stroke();
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
 
-      // Vẽ văn bản
-      ctx.fillStyle = textColor;
-      ctx.font = 'bold 44px Nunito, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${icon} ${text}`, 256, 64);
+    // Ánh sáng
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444455, 0.75);
+    scene.add(hemiLight);
 
-      const texture = new THREE.CanvasTexture(canvas);
-      const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false });
-      const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(3.2, 0.8, 1);
-      sprite.userData = { canvas, ctx, bgColor, textColor, icon };
-      return sprite;
-    }
+    const dirLight = new THREE.DirectionalLight(0xfff7ed, 0.9);
+    dirLight.position.set(30, 60, 40);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 10;
+    dirLight.shadow.camera.far = 180;
+    dirLight.shadow.camera.left = -50;
+    dirLight.shadow.camera.right = 50;
+    dirLight.shadow.camera.top = 50;
+    dirLight.shadow.camera.bottom = -50;
+    scene.add(dirLight);
 
-    function updateTextSprite(sprite, text, bgColor, textColor, icon = '🏃') {
-      if (!sprite || !sprite.userData.ctx) return;
-      const { ctx, canvas } = sprite.userData;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const r = 26;
-      const x = 16, y = 16, w = 480, h = 96;
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-
-      ctx.fillStyle = bgColor || sprite.userData.bgColor;
-      ctx.fill();
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = '#fef08a';
-      ctx.stroke();
-
-      ctx.fillStyle = textColor || sprite.userData.textColor;
-      ctx.font = 'bold 44px Nunito, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${icon} ${text}`, 256, 64);
-
-      sprite.material.map.needsUpdate = true;
-    }
-
-    /* ----------------------------------------------------------------
-       3. HỆ THỐNG THREE.JS 3D SCENE & TOÀ NHÀ SÂN TRƯỜNG
-    ---------------------------------------------------------------- */
-    let scene, camera, renderer;
-    let teacherObj = null;
-    let studentPool = [];
-    let chaseTargetStudent = null;
-    let cameraMode = 'follow'; // 'follow' hoặc 'overview'
-    const FIELD_X_MIN = -32, FIELD_X_MAX = 32;
-    const FIELD_Z_MIN = -12, FIELD_Z_MAX = 34;
-
-    function init3D() {
-      const container = document.getElementById('webgl-canvas');
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x87ceeb); // Bầu trời Anime xanh biếc
-      scene.fog = new THREE.FogExp2(0xcce7ff, 0.008);
-
-      // Camera Perspective
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-      camera.position.set(0, 26, 48);
-
-      // Renderer
-      renderer = new THREE.WebGLRenderer({ canvas: container, antialias: true, powerPreference: 'high-performance' });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-      // Ánh sáng chiếu rọi sân trường Anime
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
-      scene.add(ambientLight);
-
-      const dirLight = new THREE.DirectionalLight(0xfff7e6, 0.85);
-      dirLight.position.set(30, 45, 30);
-      dirLight.castShadow = true;
-      dirLight.shadow.mapSize.width = 2048;
-      dirLight.shadow.mapSize.height = 2048;
-      dirLight.shadow.camera.near = 0.5;
-      dirLight.shadow.camera.far = 120;
-      dirLight.shadow.camera.left = -50;
-      dirLight.shadow.camera.right = 50;
-      dirLight.shadow.camera.top = 50;
-      dirLight.shadow.camera.bottom = -50;
-      scene.add(dirLight);
-
-      // Xây dựng bối cảnh sân trường
-      buildSchoolEnvironment();
-
-      // Tạo nhân vật Cô Giáo 3D Chibi
-      teacherObj = createTeacherChibi3D();
-      scene.add(teacherObj.mesh);
-
-      // Tạo học sinh 3D Chibi
-      refreshStudentsInScene();
-
-      // Lắng nghe tương tác chuột / cảm ứng để xoay góc nhìn
-      setupControls();
-
-      // Resize
-      window.addEventListener('resize', onWindowResize);
-    }
-
-    /* Xây dựng sân trường & toà nhà Anime */
+    // Xây dựng Môi trường: Sân trường, Tòa nhà, Cửa lớp an toàn
     function buildSchoolEnvironment() {
-      // 1. Mặt sân trường (Gạch màu vàng ấm như trong ảnh mẫu)
-      const groundGeo = new THREE.PlaneGeometry(120, 80);
-      const groundMat = new THREE.MeshLambertMaterial({ color: 0xdeb887 });
+      // 1. Mặt đất sân trường (Gạch lát màu kem sáng và sân tennis)
+      const groundGeo = new THREE.PlaneGeometry(160, 160);
+      const groundMat = new THREE.MeshLambertMaterial({ color: 0xeadcc2 });
       const ground = new THREE.Mesh(groundGeo, groundMat);
       ground.rotation.x = -Math.PI / 2;
-      ground.position.set(0, 0, 10);
       ground.receiveShadow = true;
       scene.add(ground);
 
-      // 2. Kẻ vạch sân thể thao (Bóng rổ / Cầu lông trắng viền)
-      const courtMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.65 });
+      // Kẻ vạch sân thể thao 2 bên
+      const courtGeo = new THREE.PlaneGeometry(28, 42);
+      const courtMat = new THREE.MeshLambertMaterial({ color: 0xd6e0e6 });
       
-      // Sân trái & Sân phải
-      [-16, 16].forEach(offsetCourtX => {
-        const courtLineGeo = new THREE.RingGeometry(4.8, 5.0, 32);
-        const ring = new THREE.Mesh(courtLineGeo, courtMat);
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.set(offsetCourtX, 0.02, 12);
-        scene.add(ring);
+      const leftCourt = new THREE.Mesh(courtGeo, courtMat);
+      leftCourt.rotation.x = -Math.PI / 2;
+      leftCourt.position.set(-26, 0.02, 10);
+      leftCourt.receiveShadow = true;
+      scene.add(leftCourt);
 
-        const courtRect = new THREE.Mesh(new THREE.PlaneGeometry(16, 24), new THREE.MeshBasicMaterial({
-          color: 0xffffff, wireframe: true, transparent: true, opacity: 0.4
-        }));
-        courtRect.rotation.x = -Math.PI / 2;
-        courtRect.position.set(offsetCourtX, 0.02, 12);
-        scene.add(courtRect);
-      });
+      const rightCourt = new THREE.Mesh(courtGeo, courtMat);
+      rightCourt.rotation.x = -Math.PI / 2;
+      rightCourt.position.set(26, 0.02, 10);
+      rightCourt.receiveShadow = true;
+      scene.add(rightCourt);
 
-      // 3. Tòa nhà trường học hiện đại phía sau (Anime School Building)
-      const bldgGroup = new THREE.Group();
-      bldgGroup.position.set(0, 0, -18);
+      // 2. Tòa nhà lớp học hiện đại ở phía sau
+      const schoolGroup = new THREE.Group();
+      schoolGroup.position.set(0, 0, -28);
 
-      // Thân chính tòa nhà
-      const mainBldg = new THREE.Mesh(
-        new THREE.BoxGeometry(84, 26, 14),
-        new THREE.MeshLambertMaterial({ color: 0xe2e8f0 })
-      );
-      mainBldg.position.y = 13;
-      mainBldg.castShadow = true;
-      mainBldg.receiveShadow = true;
-      bldgGroup.add(mainBldg);
+      const buildingMat = new THREE.MeshLambertMaterial({ color: 0xf1f5f9 });
+      const blueTrimMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
+      const glassMat = new THREE.MeshLambertMaterial({ color: 0x93c5fd });
 
-      // Tấm pin năng lượng mặt trời trên mái
-      for (let p = -32; p <= 32; p += 16) {
-        const panel = new THREE.Mesh(
-          new THREE.BoxGeometry(10, 0.8, 8),
-          new THREE.MeshLambertMaterial({ color: 0x0369a1 })
-        );
-        panel.position.set(p, 26.5, 0);
-        panel.rotation.x = -0.2;
-        bldgGroup.add(panel);
-      }
+      // Khối nhà chính
+      const mainBlock = new THREE.Mesh(new THREE.BoxGeometry(84, 28, 18), buildingMat);
+      mainBlock.position.y = 14;
+      mainBlock.castShadow = true;
+      mainBlock.receiveShadow = true;
+      schoolGroup.add(mainBlock);
 
-      // Các dãy cửa sổ lớp học kính xanh
-      for (let floor = 1; floor <= 2; floor++) {
-        for (let w = -34; w <= 34; w += 8.5) {
-          if (Math.abs(w) < 10) continue; // Nhường chỗ cho sảnh chính
-          const win = new THREE.Mesh(
-            new THREE.PlaneGeometry(5.5, 4.5),
-            new THREE.MeshLambertMaterial({ color: 0x38bdf8 })
-          );
-          win.position.set(w, floor * 7 + 3, 7.02);
-          bldgGroup.add(win);
+      // Các mảng kính cửa sổ
+      for (let f = 0; f < 3; f++) {
+        for (let col = -3; col <= 3; col++) {
+          if (f === 0 && (col === 0 || col === -1 || col === 1)) continue; // Chừa cửa ra vào
+          const windowMesh = new THREE.Mesh(new THREE.BoxGeometry(7, 4.5, 0.5), glassMat);
+          windowMesh.position.set(col * 11, 6 + f * 8, 9.2);
+          schoolGroup.add(windowMesh);
         }
       }
 
-      // Sảnh chính trung tâm & Cổng kính "CỬA LỚP AN TOÀN"
-      const centerGlass = new THREE.Mesh(
-        new THREE.PlaneGeometry(18, 14),
-        new THREE.MeshLambertMaterial({ color: 0x0284c7 })
+      // Khối cửa chính sảnh lớp học
+      const entranceFrame = new THREE.Mesh(new THREE.BoxGeometry(22, 11, 2), blueTrimMat);
+      entranceFrame.position.set(0, 5.5, 9.2);
+      schoolGroup.add(entranceFrame);
+
+      // Cổng CỬA LỚP AN TOÀN phát sáng màu xanh lá
+      const safeDoorGeo = new THREE.PlaneGeometry(16, 9);
+      const safeDoorMat = new THREE.MeshBasicMaterial({ 
+        color: 0x10b981, 
+        transparent: true, 
+        opacity: 0.55, 
+        side: THREE.DoubleSide 
+      });
+      const safeDoor = new THREE.Mesh(safeDoorGeo, safeDoorMat);
+      safeDoor.position.set(0, 4.5, 9.5);
+      schoolGroup.add(safeDoor);
+
+      // Biển hiệu "CỬA LỚP AN TOÀN"
+      const signCanvas = document.createElement('canvas');
+      signCanvas.width = 512;
+      signCanvas.height = 128;
+      const ctx = signCanvas.getContext('2d');
+      ctx.fillStyle = '#065f46';
+      ctx.fillRect(0, 0, 512, 128);
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#34d399';
+      ctx.strokeRect(0, 0, 512, 128);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 44px Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🛡️ CỬA LỚP AN TOÀN', 256, 64);
+
+      const signTex = new THREE.CanvasTexture(signCanvas);
+      const signMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(10, 2.5),
+        new THREE.MeshBasicMaterial({ map: signTex, transparent: true })
       );
-      centerGlass.position.set(0, 15, 7.05);
-      bldgGroup.add(centerGlass);
+      signMesh.position.set(0, 9.5, 10.3);
+      schoolGroup.add(signMesh);
 
-      // Biển hiệu "CỬA LỚP AN TOÀN" chuẩn như ảnh mẫu 2
-      const doorSignSprite = createTextSprite("CỬA LỚP AN TOÀN", "#059669", "#ffffff", "🛡️");
-      doorSignSprite.position.set(0, 8.5, 7.5);
-      doorSignSprite.scale.set(7.5, 1.8, 1);
-      bldgGroup.add(doorSignSprite);
+      scene.add(schoolGroup);
 
-      // Cửa trượt tầng trệt
-      const doorFrame = new THREE.Mesh(
-        new THREE.BoxGeometry(14, 7, 0.5),
-        new THREE.MeshLambertMaterial({ color: 0x94a3b8 })
-      );
-      doorFrame.position.set(0, 3.5, 7.1);
-      bldgGroup.add(doorFrame);
-
-      // Bậc tam cấp trước sảnh trường
-      const step = new THREE.Mesh(
-        new THREE.BoxGeometry(22, 1.0, 5),
-        new THREE.MeshLambertMaterial({ color: 0xcfd8dc })
-      );
-      step.position.set(0, 0.5, 8.5);
-      step.receiveShadow = true;
-      bldgGroup.add(step);
-
-      scene.add(bldgGroup);
-
-      // 4. Hàng cây cọ nhiệt đới & bồn hoa 2 bên sân trường
-      createPalmTree(-36, 16);
-      createPalmTree(-36, -2);
-      createPalmTree(36, 16);
-      createPalmTree(36, -2);
-
-      // 5. Đạo cụ hài hước: "Dép tổ ong / Giày ai rơi?" rơi trên sân (Như ảnh 2)
-      createFunnySlippers();
+      // Cây cối trang trí 2 bên
+      for (let i = -1; i <= 1; i += 2) {
+        for (let j = 0; j < 3; j++) {
+          const tree = createTree();
+          tree.position.set(i * (42 + j * 5), 0, -18 + j * 16);
+          scene.add(tree);
+        }
+      }
     }
 
-    function createPalmTree(x, z) {
+    function createTree() {
       const tree = new THREE.Group();
-      tree.position.set(x, 0, z);
-
-      // Bồn hoa tròn
-      const planter = new THREE.Mesh(
-        new THREE.CylinderGeometry(2, 2.2, 0.8, 16),
-        new THREE.MeshLambertMaterial({ color: 0xa8a29e })
-      );
-      planter.position.y = 0.4;
-      tree.add(planter);
-
-      // Thân dừa
       const trunk = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.5, 0.8, 12, 8),
+        new THREE.CylinderGeometry(0.5, 0.7, 4, 8),
         new THREE.MeshLambertMaterial({ color: 0x78350f })
       );
-      trunk.position.y = 6;
+      trunk.position.y = 2;
       trunk.castShadow = true;
       tree.add(trunk);
 
-      // Tán lá xanh hình cầu / nón phong cách Anime
-      for (let i = 0; i < 5; i++) {
-        const frond = new THREE.Mesh(
-          new THREE.ConeGeometry(3.5, 5, 5),
-          new THREE.MeshLambertMaterial({ color: 0x16a34a })
-        );
-        frond.position.set(0, 11, 0);
-        frond.rotation.z = 0.5 * Math.sin((i / 5) * Math.PI * 2);
-        frond.rotation.x = 0.5 * Math.cos((i / 5) * Math.PI * 2);
-        tree.add(frond);
-      }
-      scene.add(tree);
-    }
-
-    function createFunnySlippers() {
-      const slipperGroup = new THREE.Group();
-      slipperGroup.position.set(-20, 0.05, 14);
-
-      // Chiếc dép tổ ong màu xanh vàng rơi chỏng chơ
-      const slipper = new THREE.Mesh(
-        new THREE.BoxGeometry(0.8, 0.2, 1.4),
-        new THREE.MeshLambertMaterial({ color: 0x0284c7 })
+      const leaves = new THREE.Mesh(
+        new THREE.SphereGeometry(3.5, 8, 8),
+        new THREE.MeshLambertMaterial({ color: 0x22c55e })
       );
-      slipper.rotation.y = 0.6;
-      slipperGroup.add(slipper);
-
-      // Bảng chú thích "Giày ai rơi?" lơ lửng trên mặt sân
-      const shoeSprite = createTextSprite("Giày ai rơi?", "#0f172a", "#fde047", "🩴");
-      shoeSprite.scale.set(2.8, 0.7, 1);
-      shoeSprite.position.set(0, 1.5, 0);
-      slipperGroup.add(shoeSprite);
-
-      scene.add(slipperGroup);
+      leaves.position.y = 5.5;
+      leaves.castShadow = true;
+      tree.add(leaves);
+      return tree;
     }
 
-    /* ----------------------------------------------------------------
-       4. TẠO MÔ HÌNH NHÂN VẬT 3D CHIBI ANIME & BỘ XƯƠNG CỬ ĐỘNG
-    ---------------------------------------------------------------- */
+    // Tạo Mô hình Nhân vật 3D Chibi (Học Sinh & Cô Giáo)
+    const HAIR_COLORS = [0x1c1917, 0x451a03, 0x78350f, 0x9a3412];
+    const CLOTHES_COLORS = [0x38bdf8, 0xf43f5e, 0x10b981, 0x8b5cf6, 0xfb923c, 0xfacc15];
 
-    /* Tạo Cô Giáo 3D Chibi (Đeo kính, tóc búi, vest xanh, giơ Sổ Đầu Bài đỏ) */
-    function createTeacherChibi3D() {
+    function createHumanModel(isTeacher = false, hairColor = 0x1c1917, shirtColor = 0x38bdf8) {
       const group = new THREE.Group();
 
-      // Toàn bộ thân
-      const bodyPivot = new THREE.Group();
-      group.add(bodyPivot);
-
-      // Đầu Chibi to tròn đáng yêu
+      // Đầu Chibi to tròn
       const head = new THREE.Mesh(
-        new THREE.SphereGeometry(1.0, 24, 24),
+        new THREE.SphereGeometry(0.85, 16, 16),
         new THREE.MeshLambertMaterial({ color: 0xffdfba })
       );
       head.position.y = 2.4;
       head.castShadow = true;
-      bodyPivot.add(head);
+      group.add(head);
 
-      // Mái tóc & Búi tóc củ tỏi công sở
+      // Tóc
       const hair = new THREE.Mesh(
-        new THREE.SphereGeometry(1.06, 16, 16),
-        new THREE.MeshLambertMaterial({ color: 0x475569 })
+        new THREE.SphereGeometry(0.9, 16, 16),
+        new THREE.MeshLambertMaterial({ color: hairColor })
       );
-      hair.position.set(0, 2.5, -0.15);
-      bodyPivot.add(hair);
+      hair.position.set(0, 2.6, -0.15);
+      hair.scale.set(1.02, 0.9, 1.05);
+      group.add(hair);
 
-      const bun = new THREE.Mesh(
-        new THREE.SphereGeometry(0.45, 16, 16),
-        new THREE.MeshLambertMaterial({ color: 0x334155 })
-      );
-      bun.position.set(0, 3.4, -0.4);
-      bodyPivot.add(bun);
+      if (isTeacher) {
+        // Kính cận cô giáo
+        const glasses = new THREE.Mesh(
+          new THREE.BoxGeometry(0.95, 0.3, 0.1),
+          new THREE.MeshBasicMaterial({ color: 0x0f172a })
+        );
+        glasses.position.set(0, 2.45, 0.85);
+        group.add(glasses);
 
-      // Kính mắt thông thái
-      const glassesMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
-      const glassLeft = new THREE.Mesh(new THREE.RingGeometry(0.18, 0.25, 16), glassesMat);
-      glassLeft.position.set(-0.35, 2.4, 0.95);
-      bodyPivot.add(glassLeft);
-      const glassRight = new THREE.Mesh(new THREE.RingGeometry(0.18, 0.25, 16), glassesMat);
-      glassRight.position.set(0.35, 2.4, 0.95);
-      bodyPivot.add(glassRight);
-
-      // Thân áo Vest xanh ngọc
-      const torso = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.65, 0.75, 1.2, 16),
-        new THREE.MeshLambertMaterial({ color: 0x38bdf8 })
-      );
-      torso.position.y = 1.35;
-      torso.castShadow = true;
-      bodyPivot.add(torso);
-
-      // Chân váy công sở màu xanh than
-      const skirt = new THREE.Mesh(
-        new THREE.ConeGeometry(0.9, 0.7, 16),
-        new THREE.MeshLambertMaterial({ color: 0x1e293b })
-      );
-      skirt.position.y = 0.75;
-      bodyPivot.add(skirt);
-
-      // Đôi chân chạy rượt đuổi
-      const legGeo = new THREE.CylinderGeometry(0.18, 0.16, 0.9, 8);
-      const legMat = new THREE.MeshLambertMaterial({ color: 0xffdfba });
-      const shoeMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
-
-      const leftLegGroup = new THREE.Group();
-      leftLegGroup.position.set(-0.32, 0.7, 0);
-      const leftLeg = new THREE.Mesh(legGeo, legMat);
-      leftLeg.position.y = -0.45;
-      leftLegGroup.add(leftLeg);
-      const leftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.45), shoeMat);
-      leftShoe.position.set(0, -0.85, 0.1);
-      leftLegGroup.add(leftShoe);
-      group.add(leftLegGroup);
-
-      const rightLegGroup = new THREE.Group();
-      rightLegGroup.position.set(0.32, 0.7, 0);
-      const rightLeg = new THREE.Mesh(legGeo, legMat);
-      rightLeg.position.y = -0.45;
-      rightLegGroup.add(rightLeg);
-      const rightShoe = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.45), shoeMat);
-      rightShoe.position.set(0, -0.85, 0.1);
-      rightLegGroup.add(rightShoe);
-      group.add(rightLegGroup);
-
-      // Cánh tay phải cầm CUỐN SỔ ĐẦU BÀI MÀU ĐỎ VIỀN VÀNG giơ cao
-      const armMat = new THREE.MeshLambertMaterial({ color: 0x38bdf8 });
-      const rightArmGroup = new THREE.Group();
-      rightArmGroup.position.set(0.75, 1.8, 0);
-      const armR = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.9, 8), armMat);
-      armR.position.set(0.1, 0.35, 0.2);
-      armR.rotation.x = -0.6;
-      armR.rotation.z = -0.4;
-      rightArmGroup.add(armR);
-
-      // Cuốn Sổ Đầu Bài đỏ rực rỡ
-      const bookMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(0.7, 0.95, 0.2),
-        new THREE.MeshLambertMaterial({ color: 0xb91c1c })
-      );
-      bookMesh.position.set(0.35, 0.8, 0.45);
-      bookMesh.rotation.set(-0.3, 0.4, 0.2);
-      bookMesh.castShadow = true;
-      rightArmGroup.add(bookMesh);
-      bodyPivot.add(rightArmGroup);
-
-      // Cánh tay trái vung vẩy khi chạy
-      const leftArmGroup = new THREE.Group();
-      leftArmGroup.position.set(-0.75, 1.8, 0);
-      const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.9, 8), armMat);
-      armL.position.y = -0.35;
-      leftArmGroup.add(armL);
-      bodyPivot.add(leftArmGroup);
-
-      // Bảng khẩu hiệu cô giáo lơ lửng trên đầu 3D Billboard
-      const badge = createTextSprite("CÔ ĐANG CHỐT SỐ!", "#b91c1c", "#fef08a", "📢");
-      badge.position.set(0, 4.3, 0);
-      group.add(badge);
-
-      group.position.set(0, 0, 18);
-
-      return {
-        mesh: group,
-        bodyPivot,
-        leftLegGroup,
-        rightLegGroup,
-        leftArmGroup,
-        rightArmGroup,
-        badge,
-        speed: 14,
-        animTimer: 0
-      };
-    }
-
-    /* Tạo Nhân vật Học sinh 3D Chibi (Đồng phục kem/đen như ảnh Vũ Bình Dương & Đức Khiêm) */
-    function createStudentChibi3D(name, isFemale = true) {
-      const group = new THREE.Group();
-
-      const bodyPivot = new THREE.Group();
-      group.add(bodyPivot);
-
-      // Đầu Chibi tròn
-      const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.85, 20, 20),
-        new THREE.MeshLambertMaterial({ color: 0xffdfba })
-      );
-      head.position.y = 2.1;
-      head.castShadow = true;
-      bodyPivot.add(head);
-
-      // Tóc Anime
-      const hairMat = new THREE.MeshLambertMaterial({ color: isFemale ? 0x1e293b : 0x334155 });
-      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 16), hairMat);
-      hair.position.set(0, 2.2, -0.1);
-      bodyPivot.add(hair);
-
-      if (isFemale) {
-        // Tóc cột đuôi gà bên cạnh hệt như học sinh Vũ Bình Dương trong ảnh 1
-        const ponytail = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.9, 8), hairMat);
-        ponytail.position.set(-0.85, 2.2, -0.4);
-        ponytail.rotation.z = 1.2;
-        bodyPivot.add(ponytail);
+        // Búi tóc phía sau
+        const bun = new THREE.Mesh(
+          new THREE.SphereGeometry(0.4, 8, 8),
+          new THREE.MeshLambertMaterial({ color: hairColor })
+        );
+        bun.position.set(0, 2.7, -0.9);
+        group.add(bun);
       }
 
-      // Giọt mồ hôi hột hoảng sợ
-      const sweat = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(0.18),
-        new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
+      // Thân áo
+      const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4, 0.65, 1.2, 12),
+        new THREE.MeshLambertMaterial({ color: shirtColor })
       );
-      sweat.position.set(0.65, 2.5, 0.45);
-      bodyPivot.add(sweat);
+      body.position.y = 1.3;
+      body.castShadow = true;
+      group.add(body);
 
-      // Thân: Áo len be/kem đồng phục học sinh
-      const torso = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.55, 0.65, 1.0, 16),
-        new THREE.MeshLambertMaterial({ color: 0xfef3c7 })
-      );
-      torso.position.y = 1.2;
-      torso.castShadow = true;
-      bodyPivot.add(torso);
+      // Hai chân
+      const legGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.9, 8);
+      const legMat = new THREE.MeshLambertMaterial({ color: isTeacher ? 0x1e293b : 0x0284c7 });
 
-      // Quần hoặc váy
-      const bottom = isFemale
-        ? new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.6, 16), new THREE.MeshLambertMaterial({ color: 0x1e293b }))
-        : new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.6, 0.5), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
-      bottom.position.y = 0.7;
-      bodyPivot.add(bottom);
-
-      // Đôi chân
-      const legGeo = new THREE.CylinderGeometry(0.15, 0.14, 0.8, 8);
-      const legMat = new THREE.MeshLambertMaterial({ color: isFemale ? 0xffdfba : 0x1e293b });
-      const shoeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-
-      const leftLegGroup = new THREE.Group();
-      leftLegGroup.position.set(-0.25, 0.6, 0);
       const leftLeg = new THREE.Mesh(legGeo, legMat);
-      leftLeg.position.y = -0.35;
-      leftLegGroup.add(leftLeg);
-      const leftShoe = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 0.4), shoeMat);
-      leftShoe.position.set(0, -0.7, 0.1);
-      leftLegGroup.add(leftShoe);
-      group.add(leftLegGroup);
+      leftLeg.position.set(-0.3, 0.45, 0);
+      leftLeg.castShadow = true;
+      group.add(leftLeg);
 
-      const rightLegGroup = new THREE.Group();
-      rightLegGroup.position.set(0.25, 0.6, 0);
       const rightLeg = new THREE.Mesh(legGeo, legMat);
-      rightLeg.position.y = -0.35;
-      rightLegGroup.add(rightLeg);
-      const rightShoe = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.18, 0.4), shoeMat);
-      rightShoe.position.set(0, -0.7, 0.1);
-      rightLegGroup.add(rightShoe);
-      group.add(rightLegGroup);
+      rightLeg.position.set(0.3, 0.45, 0);
+      rightLeg.castShadow = true;
+      group.add(rightLeg);
 
-      // Tay chạy quạt gió
-      const armMat = new THREE.MeshLambertMaterial({ color: 0xfef3c7 });
-      const leftArmGroup = new THREE.Group();
-      leftArmGroup.position.set(-0.65, 1.5, 0);
-      const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8), armMat);
-      armL.position.y = -0.3;
-      leftArmGroup.add(armL);
-      bodyPivot.add(leftArmGroup);
+      // Hai tay
+      const armGeo = new THREE.CylinderGeometry(0.14, 0.14, 0.8, 8);
+      const armMat = new THREE.MeshLambertMaterial({ color: 0xffdfba });
 
-      const rightArmGroup = new THREE.Group();
-      rightArmGroup.position.set(0.65, 1.5, 0);
-      const armR = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.7, 8), armMat);
-      armR.position.y = -0.3;
-      rightArmGroup.add(armR);
-      bodyPivot.add(rightArmGroup);
+      const leftArm = new THREE.Mesh(armGeo, armMat);
+      leftArm.position.set(-0.7, 1.3, 0);
+      group.add(leftArm);
 
-      // TÊN HỌC SINH 3D BILLBOARD lơ lửng trên đầu
-      const nameTag = createTextSprite(name, "#e11d48", "#ffffff", "🏃");
-      nameTag.position.set(0, 3.8, 0);
-      group.add(nameTag);
+      const rightArm = new THREE.Mesh(armGeo, armMat);
+      rightArm.position.set(0.7, 1.3, 0);
+      group.add(rightArm);
 
-      // Tọa độ ngẫu nhiên trên sân
-      const randX = THREE.MathUtils.randFloat(FIELD_X_MIN, FIELD_X_MAX);
-      const randZ = THREE.MathUtils.randFloat(FIELD_Z_MIN, FIELD_Z_MAX);
-      group.position.set(randX, 0, randZ);
+      // Vật phẩm trên tay: Sổ Đầu Bài màu đỏ viền vàng cho cô giáo
+      if (isTeacher) {
+        const book = new THREE.Mesh(
+          new THREE.BoxGeometry(0.7, 0.9, 0.2),
+          new THREE.MeshLambertMaterial({ color: 0x991b1b })
+        );
+        book.position.set(0.75, 1.3, 0.45);
+        book.rotation.set(0.4, -0.3, 0);
+        group.add(book);
+      } else {
+        // Ba lô học sinh
+        const bag = new THREE.Mesh(
+          new THREE.BoxGeometry(0.7, 0.8, 0.35),
+          new THREE.MeshLambertMaterial({ color: shirtColor })
+        );
+        bag.position.set(0, 1.3, -0.6);
+        group.add(bag);
+      }
 
       return {
         mesh: group,
-        name,
-        bodyPivot,
-        leftLegGroup,
-        rightLegGroup,
-        leftArmGroup,
-        rightArmGroup,
-        nameTag,
-        sweat,
-        isPanicking: false,
-        velocity: new THREE.Vector3(THREE.MathUtils.randFloatSpread(4), 0, THREE.MathUtils.randFloatSpread(4)),
-        animTimer: Math.random() * 10
+        leftLeg: leftLeg,
+        rightLeg: rightLeg,
+        leftArm: leftArm,
+        rightArm: rightArm,
+        head: head
       };
     }
 
-    /* Cập nhật danh sách học sinh trên sân theo số lượng slider */
-    function refreshStudentsInScene() {
-      // Dọn dẹp học sinh cũ trong scene
-      studentPool.forEach(st => scene.remove(st.mesh));
-      studentPool = [];
+    // Khởi tạo các nhân vật trên sân trường
+    function setupCharacters() {
+      // Dọn dẹp nhân vật cũ nếu có
+      students.forEach(s => {
+        scene.remove(s.model.mesh);
+        if (s.domElement) s.domElement.remove();
+      });
+      students = [];
 
-      const count = Math.min(activeCrowdCount, fullClassRoster.length);
+      if (teacher) {
+        scene.remove(teacher.model.mesh);
+        if (teacher.domElement) teacher.domElement.remove();
+      }
+
+      // Tạo Cô Giáo
+      const teacherModel = createHumanModel(true, 0x334155, 0x38bdf8);
+      // Cô giáo đứng phía sau chuẩn bị rượt từ ngoài sân
+      teacherModel.mesh.position.set(0, 0, 48);
+      scene.add(teacherModel.mesh);
+
+      const teacherDom = createOverheadTag('Cô Giáo (Đang Chốt Sổ!)', true);
+
+      teacher = {
+        model: teacherModel,
+        domElement: teacherDom,
+        targetPos: new THREE.Vector3(0, 0, 48)
+      };
+
+      // Tạo các Bạn Học Sinh xuất phát rải rác ngoài sân trường
+      const count = studentList.length;
+      document.getElementById('count-display').innerText = count;
+
       for (let i = 0; i < count; i++) {
-        const studentName = fullClassRoster[i];
-        const isFemale = (i % 2 === 0);
-        const student = createStudentChibi3D(studentName, isFemale);
-        scene.add(student.mesh);
-        studentPool.push(student);
-      }
-      document.getElementById('running-count-badge').textContent = studentPool.length;
-    }
+        const hColor = HAIR_COLORS[i % HAIR_COLORS.length];
+        const sColor = CLOTHES_COLORS[i % CLOTHES_COLORS.length];
+        const model = createHumanModel(false, hColor, sColor);
 
-    function onCrowdSliderChange(val) {
-      activeCrowdCount = parseInt(val);
-      document.getElementById('slider-count-display').textContent = val;
-      refreshStudentsInScene();
-      showToast(`🏃 Đã cập nhật ${activeCrowdCount} học sinh chạy trên sân!`);
-    }
+        // Xuất phát ngoài sân xa (Z từ 22 đến 42, X từ -30 đến 30)
+        const startX = (Math.random() - 0.5) * 55;
+        const startZ = 20 + Math.random() * 24;
+        model.mesh.position.set(startX, 0, startZ);
+        scene.add(model.mesh);
 
-    /* ----------------------------------------------------------------
-       5. CHU KỲ VÒNG LẶP ANIMATION (CHẠY RƯỢT ĐUỔI & VẬN TỐC 3D)
-    ---------------------------------------------------------------- */
-    const clock = new THREE.Clock();
+        const sDom = createOverheadTag(studentList[i], false);
 
-    function animate() {
-      requestAnimationFrame(animate);
-
-      const delta = clock.getDelta();
-      const time = clock.getElapsedTime();
-
-      // Cập nhật chuyển động Cô Giáo
-      if (teacherObj) {
-        updateTeacherMovement(delta, time);
-      }
-
-      // Cập nhật chuyển động Học Sinh
-      studentPool.forEach(student => {
-        updateStudentMovement(student, delta, time);
-      });
-
-      // Điều khiển Camera
-      updateCameraFollow();
-
-      renderer.render(scene, camera);
-    }
-
-    function updateTeacherMovement(delta, time) {
-      teacherObj.animTimer += delta * (isChasing ? 20 : 10);
-
-      // Chân tay đánh nhịp rượt đuổi dồn dập
-      const legSwing = Math.sin(teacherObj.animTimer) * 0.9;
-      teacherObj.leftLegGroup.rotation.x = legSwing;
-      teacherObj.rightLegGroup.rotation.x = -legSwing;
-      teacherObj.leftArmGroup.rotation.x = -legSwing * 0.8;
-      teacherObj.rightArmGroup.rotation.x = legSwing * 0.4; // Tay cầm sổ vẫn giơ cao
-
-      // Cơ thể nhún nhảy hài hước
-      teacherObj.bodyPivot.position.y = Math.abs(Math.sin(teacherObj.animTimer * 2)) * 0.3;
-      teacherObj.bodyPivot.rotation.z = Math.sin(teacherObj.animTimer) * 0.08;
-
-      if (isChasing && chaseTargetStudent) {
-        // Đuổi theo học sinh mục tiêu
-        const targetPos = chaseTargetStudent.mesh.position;
-        const dir = new THREE.Vector3().subVectors(targetPos, teacherObj.mesh.position);
-        dir.y = 0;
-        const dist = dir.length();
-
-        if (dist > 1.8) {
-          dir.normalize();
-          teacherObj.mesh.position.addScaledVector(dir, teacherObj.speed * delta);
-          // Quay mặt theo hướng chạy
-          const angle = Math.atan2(dir.x, dir.z);
-          teacherObj.mesh.rotation.y = angle;
-        }
-      } else {
-        // Khi không rượt đuổi: đi tuần tra quanh sân
-        const patrolX = Math.sin(time * 0.8) * 12;
-        const patrolZ = 16 + Math.cos(time * 0.8) * 5;
-        const target = new THREE.Vector3(patrolX, 0, patrolZ);
-        const dir = new THREE.Vector3().subVectors(target, teacherObj.mesh.position);
-        dir.y = 0;
-        if (dir.length() > 0.5) {
-          dir.normalize();
-          teacherObj.mesh.position.addScaledVector(dir, 5 * delta);
-          teacherObj.mesh.rotation.y = Math.atan2(dir.x, dir.z);
-        }
+        students.push({
+          name: studentList[i],
+          model: model,
+          domElement: sDom,
+          startX: startX,
+          startZ: startZ,
+          currentPos: new THREE.Vector3(startX, 0, startZ),
+          isCaught: false,
+          hasEnteredClass: false,
+          chatTimer: Math.random() * 2000
+        });
       }
     }
 
-    function updateStudentMovement(student, delta, time) {
-      student.animTimer += delta * (student.isPanicking ? 18 : 8);
+    // Tạo Thẻ Tên & Khung Thoại trên đầu nhân vật
+    function createOverheadTag(name, isTeacher = false) {
+      const tag = document.createElement('div');
+      tag.className = 'overhead-tag';
 
-      // Hoạt ảnh chân tay học sinh chạy loạn
-      const swing = Math.sin(student.animTimer) * 0.8;
-      student.leftLegGroup.rotation.x = swing;
-      student.rightLegGroup.rotation.x = -swing;
-      student.leftArmGroup.rotation.x = -swing;
-      student.rightArmGroup.rotation.x = swing;
-      student.bodyPivot.position.y = Math.abs(Math.sin(student.animTimer * 2)) * 0.25;
+      const chatBox = document.createElement('div');
+      chatBox.className = 'chat-bubble';
+      chatBox.style.display = 'none';
 
-      // Giọt mồ hôi nhấp nháy
-      if (student.sweat) {
-        student.sweat.position.y = 2.4 + Math.sin(student.animTimer * 3) * 0.2;
-      }
+      const nameBox = document.createElement('div');
+      nameBox.className = `tag-name ${isTeacher ? 'tag-teacher' : ''}`;
+      nameBox.innerText = name;
 
-      // Logic chạy trốn khi cô giáo đuổi
-      if (isChasing && student === chaseTargetStudent) {
-        student.isPanicking = true;
-        // Bỏ chạy ra xa cô giáo
-        const fleeDir = new THREE.Vector3().subVectors(student.mesh.position, teacherObj.mesh.position);
-        fleeDir.y = 0;
-        fleeDir.normalize();
+      tag.appendChild(chatBox);
+      tag.appendChild(nameBox);
+      document.body.appendChild(tag);
 
-        // Tốc độ chạy trối chết của học sinh bị bắt
-        student.mesh.position.addScaledVector(fleeDir, 11 * delta);
-        student.mesh.rotation.y = Math.atan2(fleeDir.x, fleeDir.z);
-
-      } else {
-        // Chạy loanh quanh tự do trong sân
-        student.mesh.position.addScaledVector(student.velocity, delta * 1.5);
-
-        // Đổi hướng ngẫu nhiên
-        if (Math.random() < 0.02) {
-          student.velocity.set(THREE.MathUtils.randFloatSpread(5), 0, THREE.MathUtils.randFloatSpread(5));
-        }
-
-        if (student.velocity.lengthSq() > 0.1) {
-          student.mesh.rotation.y = Math.atan2(student.velocity.x, student.velocity.z);
-        }
-      }
-
-      // Giữ học sinh trong khuôn viên sân trường
-      if (student.mesh.position.x < FIELD_X_MIN) { student.mesh.position.x = FIELD_X_MIN; student.velocity.x *= -1; }
-      if (student.mesh.position.x > FIELD_X_MAX) { student.mesh.position.x = FIELD_X_MAX; student.velocity.x *= -1; }
-      if (student.mesh.position.z < FIELD_Z_MIN) { student.mesh.position.z = FIELD_Z_MIN; student.velocity.z *= -1; }
-      if (student.mesh.position.z > FIELD_Z_MAX) { student.mesh.position.z = FIELD_Z_MAX; student.velocity.z *= -1; }
+      return { root: tag, chat: chatBox, name: nameBox };
     }
 
-    /* Camera 3D linh hoạt: Bám sát rượt đuổi hoặc nhìn bao quát */
-    function updateCameraFollow() {
-      if (cameraMode === 'follow' && isChasing && teacherObj) {
-        // Bám sau lưng cô giáo góc kịch tính
-        const offset = new THREE.Vector3(0, 8, 14);
-        const targetCamPos = teacherObj.mesh.position.clone().add(offset);
-        camera.position.lerp(targetCamPos, 0.06);
-        camera.lookAt(teacherObj.mesh.position.x, 2, teacherObj.mesh.position.z - 4);
-      } else {
-        // Góc nhìn tổng quan toàn sân trường
-        const targetPos = new THREE.Vector3(0, 24, 42);
-        camera.position.lerp(targetPos, 0.04);
-        camera.lookAt(0, 4, 10);
-      }
-    }
-
-    function cycleCameraView() {
-      cameraMode = (cameraMode === 'follow') ? 'overview' : 'follow';
-      document.getElementById('cam-mode-label').textContent = cameraMode === 'follow' ? 'Cam: Theo Dõi' : 'Cam: Toàn Cảnh';
-      showToast(`🎥 Đã chuyển chế độ: ${cameraMode === 'follow' ? 'Bám sát cô giáo' : 'Góc nhìn toàn sân'}`);
-    }
-
-    /* Tương tác chuột / xoay nhẹ góc 3D */
-    let isMouseDown = false, prevMouseX = 0;
-    function setupControls() {
-      window.addEventListener('mousedown', (e) => { isMouseDown = true; prevMouseX = e.clientX; });
-      window.addEventListener('mouseup', () => { isMouseDown = false; });
-      window.addEventListener('mousemove', (e) => {
-        if (!isMouseDown) return;
-        const deltaX = e.clientX - prevMouseX;
-        prevMouseX = e.clientX;
-        scene.rotation.y += deltaX * 0.003;
-      });
-      // Cảm ứng điện thoại
-      window.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 1) {
-          const deltaX = e.touches[0].clientX - prevMouseX;
-          prevMouseX = e.touches[0].clientX;
-          scene.rotation.y += deltaX * 0.004;
-        }
-      });
-      window.addEventListener('touchstart', (e) => { prevMouseX = e.touches[0].clientX; });
-    }
-
-    function onWindowResize() {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-
-    /* ----------------------------------------------------------------
-       6. LOGIC RƯỢT ĐUỔI BẮT HỌC SINH (CORE CHASE SEQUENCE)
-    ---------------------------------------------------------------- */
-    function startChasingSequence() {
-      if (isChasing) return;
-      if (studentPool.length === 0) {
-        showToast("⚠️ Không có học sinh nào trên sân. Hãy thêm học sinh!");
-        return;
-      }
-
-      initAudio();
-      sfxWhistle();
-
-      // Kiểm tra chế độ không gọi trùng
-      const noRepeat = document.getElementById('chk-no-repeat').checked;
-      if (noRepeat && poolStudents.length === 0) {
-        showToast("🎉 Cả lớp đã được gọi đủ 1 lượt! Khởi động lại vòng mới.");
-        poolStudents = [...fullClassRoster];
-      }
-
-      // Chọn học sinh bị bắt trúng
-      const candidates = (noRepeat && poolStudents.length > 0)
-        ? studentPool.filter(st => poolStudents.includes(st.name))
-        : studentPool;
-
-      const chosenStudentObj = candidates.length > 0
-        ? candidates[Math.floor(Math.random() * candidates.length)]
-        : studentPool[Math.floor(Math.random() * studentPool.length)];
-
-      chaseTargetStudent = chosenStudentObj;
-      currentSelectedStudent = chosenStudentObj.name;
-
-      // Bật trạng thái rượt đuổi
-      isChasing = true;
-      const btn = document.getElementById('btn-start-chase');
-      btn.disabled = true;
-      btn.classList.add('opacity-50', 'cursor-not-allowed');
-
-      updateTextSprite(teacherObj.badge, "CÔ ĐANG CHỐT SỐ!", "#b91c1c", "#fef08a", "📢");
-      updateTextSprite(chaseTargetStudent.nameTag, `${chaseTargetStudent.name} (Chạy mau!)`, "#ea580c", "#ffffff", "😱");
-
-      const duration = parseFloat(document.getElementById('select-duration').value) * 1000;
-      let chaseStep = 0;
-
-      // Nhịp bước chân dồn dập
-      const stepInterval = setInterval(() => {
-        chaseStep++;
-        sfxFootstep(260 + (chaseStep % 6) * 35);
-        if (chaseStep % 4 === 0) {
-          // Đổi nhãn trêu đùa trên đầu cô giáo
-          const quotes = ["CÔ ĐANG CHỐT SỐ!", "CHẠY ĐÂU CHO THOÁT!", "LÊN BẢNG NÀO EM!"];
-          updateTextSprite(teacherObj.badge, quotes[chaseStep % quotes.length], "#b91c1c", "#fef08a", "📢");
-        }
-      }, 180);
-
-      // Kết thúc rượt đuổi: Cô giáo bắt kịp học sinh
+    function showBubble(domObj, text, duration = 1800) {
+      if (!domObj || !domObj.chat) return;
+      domObj.chat.innerText = text;
+      domObj.chat.style.display = 'block';
       setTimeout(() => {
-        clearInterval(stepInterval);
-        isChasing = false;
-        btn.disabled = false;
-        btn.classList.remove('opacity-50', 'cursor-not-allowed');
-
-        // Đưa cô giáo sát bên cạnh học sinh
-        teacherObj.mesh.position.copy(chaseTargetStudent.mesh.position).add(new THREE.Vector3(-1.2, 0, 0.4));
-        teacherObj.mesh.rotation.y = 1.2;
-        chaseTargetStudent.mesh.rotation.y = -1.2;
-
-        updateTextSprite(teacherObj.badge, "BẮT ĐƯỢC EM RỒI!", "#15803d", "#fef08a", "🎯");
-        updateTextSprite(chaseTargetStudent.nameTag, `${chaseTargetStudent.name} (Bị Bắt!)`, "#b91c1c", "#ffffff", "😭");
-
-        // Âm thanh chiến thắng & pháo hoa
-        sfxCatchVictory();
-        triggerConfetti();
-
-        if (noRepeat) {
-          poolStudents = poolStudents.filter(name => name !== currentSelectedStudent);
-        }
-
-        // Mở popup sổ đầu bài sau 0.6s
-        setTimeout(() => {
-          showResultModal(currentSelectedStudent);
-        }, 600);
-
+        domObj.chat.style.display = 'none';
       }, duration);
     }
 
-    /* ----------------------------------------------------------------
-       7. POPUP SỔ ĐẦU BÀI & CÁC CHỨC NĂNG CHẤM ĐIỂM
-    ---------------------------------------------------------------- */
-    function showResultModal(name) {
-      document.getElementById('modal-student-name').textContent = name;
-      document.getElementById('modal-turn-text').textContent = `LƯỢT ${turnCount}`;
-
-      const index = fullClassRoster.indexOf(name) + 1;
-      document.getElementById('modal-student-status').textContent = `🎯 Số thứ tự danh sách: #${index || '?'}`;
-
-      const modal = document.getElementById('result-modal');
-      const bookWrapper = document.getElementById('book-wrapper');
-      modal.classList.remove('opacity-0', 'pointer-events-none');
-      bookWrapper.classList.remove('scale-90');
-      bookWrapper.classList.add('scale-100');
-    }
-
-    function closeResultModal() {
-      const modal = document.getElementById('result-modal');
-      const bookWrapper = document.getElementById('book-wrapper');
-      bookWrapper.classList.remove('scale-100');
-      bookWrapper.classList.add('scale-90');
-      modal.classList.add('opacity-0', 'pointer-events-none');
-    }
-
-    function reRollCurrent() {
-      const remaining = studentPool.filter(st => st.name !== currentSelectedStudent);
-      if (remaining.length === 0) {
-        showToast("Không còn bạn nào khác trên sân!");
-        return;
-      }
-      const newChosen = remaining[Math.floor(Math.random() * remaining.length)];
-      currentSelectedStudent = newChosen.name;
-      chaseTargetStudent = newChosen;
-      document.getElementById('modal-student-name').textContent = currentSelectedStudent;
-      const index = fullClassRoster.indexOf(currentSelectedStudent) + 1;
-      document.getElementById('modal-student-status').textContent = `🎯 Số thứ tự danh sách: #${index || '?'}`;
-      sfxFootstep(380);
-      showToast(`🔄 Đã đổi sang bạn: ${currentSelectedStudent}`);
-    }
-
-    function gradeStudent(score) {
-      const now = new Date();
-      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      calledHistory.unshift({
-        turn: turnCount,
-        name: currentSelectedStudent,
-        grade: score,
-        time: timeStr
-      });
-      document.getElementById('history-badge').textContent = calledHistory.length;
-
-      if (score === 10) {
-        showToast(`🌟 Xuất sắc! ${currentSelectedStudent} nhận điểm 10.`);
-        triggerConfetti();
-      } else if (score === 0) {
-        showToast(`📌 Đã ghi chú ${currentSelectedStudent} chưa chuẩn bị bài vào sổ.`);
-      } else {
-        showToast(`📝 Đã ghi ${score} điểm cho ${currentSelectedStudent}.`);
-      }
-    }
-
-    function nextTurnFromModal() {
-      // Lưu nếu chưa chấm
-      const exists = calledHistory.some(h => h.turn === turnCount && h.name === currentSelectedStudent);
-      if (!exists) {
-        const now = new Date();
-        const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-        calledHistory.unshift({
-          turn: turnCount,
-          name: currentSelectedStudent,
-          grade: null,
-          time: timeStr
-        });
-        document.getElementById('history-badge').textContent = calledHistory.length;
-      }
-
-      turnCount++;
-      closeResultModal();
-      setTimeout(() => {
-        startChasingSequence();
-      }, 500);
-    }
-
-    /* ----------------------------------------------------------------
-       8. QUẢN LÝ DANH SÁCH LỚP & LỊCH SỬ
-    ---------------------------------------------------------------- */
-    function initializeData() {
-      const saved = localStorage.getItem('school_3d_roster');
-      const savedClass = localStorage.getItem('school_3d_classname');
-      if (saved) {
-        fullClassRoster = JSON.parse(saved);
-      } else {
-        fullClassRoster = [...PRESET_CLASSES['12A1']];
-      }
-      if (savedClass) {
-        document.getElementById('current-class-name').textContent = savedClass;
-      }
-      poolStudents = [...fullClassRoster];
-      document.getElementById('student-count-badge').textContent = fullClassRoster.length;
-    }
-
-    function openRosterModal() {
-      document.getElementById('input-classname').value = document.getElementById('current-class-name').textContent;
-      const textarea = document.getElementById('roster-textarea');
-      textarea.value = fullClassRoster.join('\n');
-      document.getElementById('textarea-counter').textContent = `${fullClassRoster.length} học sinh`;
-
-      textarea.oninput = () => {
-        const count = textarea.value.split('\n').filter(s => s.trim().length > 0).length;
-        document.getElementById('textarea-counter').textContent = `${count} học sinh`;
-      };
-
-      document.getElementById('roster-modal').classList.remove('opacity-0', 'pointer-events-none');
-    }
-
-    function closeRosterModal() {
-      document.getElementById('roster-modal').classList.add('opacity-0', 'pointer-events-none');
-    }
-
-    function saveRosterList() {
-      const raw = document.getElementById('roster-textarea').value;
-      const names = raw.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-      if (names.length === 0) {
-        showToast("⚠️ Vui lòng nhập ít nhất 1 học sinh!");
-        return;
-      }
-      fullClassRoster = names;
-      const clsName = document.getElementById('input-classname').value.trim() || 'Lớp Học';
-      document.getElementById('current-class-name').textContent = clsName;
-      document.getElementById('student-count-badge').textContent = names.length;
-
-      localStorage.setItem('school_3d_roster', JSON.stringify(fullClassRoster));
-      localStorage.setItem('school_3d_classname', clsName);
-
-      poolStudents = [...fullClassRoster];
-      // Cập nhật giới hạn slider
-      const slider = document.getElementById('slider-crowd-size');
-      slider.max = Math.max(names.length, 5);
-      if (activeCrowdCount > names.length) {
-        activeCrowdCount = names.length;
-        slider.value = activeCrowdCount;
-        document.getElementById('slider-count-display').textContent = activeCrowdCount;
-      }
-      refreshStudentsInScene();
-      closeRosterModal();
-      showToast(`✅ Đã lưu danh sách ${names.length} học sinh!`);
-    }
-
-    function loadPresetClass(key) {
-      if (PRESET_CLASSES[key]) {
-        document.getElementById('input-classname').value = key + " Chuyên";
-        document.getElementById('roster-textarea').value = PRESET_CLASSES[key].join('\n');
-        document.getElementById('textarea-counter').textContent = `${PRESET_CLASSES[key].length} học sinh`;
-      }
-    }
-
-    function resetDefaultList() {
-      loadPresetClass('12A1');
-      showToast("Đã khôi phục lớp 12A1");
-    }
-
-    // Modal Lịch sử
-    function openHistoryModal() {
-      renderHistoryList();
-      document.getElementById('history-modal').classList.remove('opacity-0', 'pointer-events-none');
-    }
-    function closeHistoryModal() {
-      document.getElementById('history-modal').classList.add('opacity-0', 'pointer-events-none');
-    }
-    function renderHistoryList() {
-      const container = document.getElementById('history-list-content');
-      if (calledHistory.length === 0) {
-        container.innerHTML = `
-          <div class="h-full flex flex-col items-center justify-center text-slate-400 py-8">
-            <i class="fa-solid fa-graduation-cap text-4xl mb-2 text-slate-300"></i>
-            <p class="text-sm font-semibold">Chưa có học sinh nào được gọi trong tiết này</p>
-          </div>
-        `;
-        return;
-      }
-      container.innerHTML = calledHistory.map(item => `
-        <div class="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-          <div class="flex items-center gap-2.5">
-            <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-black flex items-center justify-center">${item.turn}</span>
-            <div>
-              <p class="font-bold text-sm text-slate-800">${item.name}</p>
-              <p class="text-[10px] text-slate-400">${item.time}</p>
-            </div>
-          </div>
-          <div class="text-xs font-black px-2.5 py-1 rounded-lg ${item.grade === 10 ? 'bg-emerald-100 text-emerald-800' : (item.grade === 0 ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800')}">
-            ${item.grade !== null ? (item.grade === 0 ? 'Chưa thuộc bài' : item.grade + ' Điểm') : 'Chưa ghi điểm'}
-          </div>
-        </div>
-      `).join('');
-    }
-    function clearHistory() {
-      calledHistory = [];
-      document.getElementById('history-badge').textContent = 0;
-      renderHistoryList();
-      showToast("🧹 Đã xóa toàn bộ lịch sử gọi bài");
-    }
-
-    /* ----------------------------------------------------------------
-       9. ÂM THANH SYNTH (WEB AUDIO API)
-    ---------------------------------------------------------------- */
-    let audioCtx = null;
-    function initAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    function sfxFootstep(freq = 280) {
-      if (!soundEnabled) return;
-      try {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.08);
-      } catch (e) {}
-    }
-    function sfxWhistle() {
-      if (!soundEnabled) return;
-      try {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1400, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(1900, audioCtx.currentTime + 0.15);
-        osc.frequency.linearRampToValueAtTime(1400, audioCtx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.35);
-      } catch (e) {}
-    }
-    function sfxCatchVictory() {
-      if (!soundEnabled) return;
-      try {
-        initAudio();
-        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.value = freq;
-          const t = audioCtx.currentTime + idx * 0.09;
-          gain.gain.setValueAtTime(0.25, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start(t);
-          osc.stop(t + 0.4);
-        });
-      } catch (e) {}
-    }
-    function sfxApplause() {
-      showToast("👏 Cả lớp vỗ tay nồng nhiệt cổ vũ bạn!");
-      if (!soundEnabled) return;
-      try {
-        initAudio();
-        for (let i = 0; i < 6; i++) {
-          setTimeout(() => {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = 600 + Math.random() * 400;
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
-          }, i * 60);
-        }
-      } catch (e) {}
-    }
-    function toggleSound() {
-      soundEnabled = !soundEnabled;
-      const icon = document.getElementById('sound-icon');
-      if (soundEnabled) {
-        icon.className = 'fa-solid fa-volume-high text-amber-400';
-        showToast("🔊 Đã bật âm thanh rượt đuổi");
-      } else {
-        icon.className = 'fa-solid fa-volume-xmark text-slate-500';
-        showToast("🔇 Đã tắt âm thanh");
-      }
-    }
-
-    /* ----------------------------------------------------------------
-       10. TIỆN ÍCH TOAST, CONFETTI & FULLSCREEN
-    ---------------------------------------------------------------- */
-    function triggerConfetti() {
-      try {
-        if (typeof confetti === 'function') {
-          confetti({ particleCount: 75, spread: 80, origin: { y: 0.6 } });
-        }
-      } catch (e) {}
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('toast-message');
-      document.getElementById('toast-text').textContent = msg;
-      toast.classList.remove('opacity-0', 'pointer-events-none');
-      clearTimeout(window.toastTimer);
-      window.toastTimer = setTimeout(() => {
-        toast.classList.add('opacity-0', 'pointer-events-none');
-      }, 2400);
-    }
-
-    function toggleFullScreen() {
-      const icon = document.getElementById('fullscreen-icon');
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().then(() => {
-          icon.className = 'fa-solid fa-compress text-emerald-400';
-          showToast("📺 Đã bật chế độ Toàn Màn Hình");
-        }).catch(() => {});
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen().then(() => {
-            icon.className = 'fa-solid fa-expand text-emerald-400';
-          }).catch(() => {});
-        }
-      }
-    }
-
-    // Phím tắt Space & Escape
-    window.addEventListener('keydown', (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
-      if (e.code === 'Space') {
-        e.preventDefault();
-        const modal = document.getElementById('result-modal');
-        if (modal.classList.contains('pointer-events-none')) {
-          startChasingSequence();
+    // Cập nhật vị trí thẻ tên trên màn hình 2D
+    const tempVec = new THREE.Vector3();
+    function updateDOMTags() {
+      // Cô giáo
+      if (teacher) {
+        teacher.model.mesh.getWorldPosition(tempVec);
+        tempVec.y += 3.4;
+        tempVec.project(camera);
+        if (tempVec.z < 1) {
+          const x = (tempVec.x * 0.5 + 0.5) * window.innerWidth;
+          const y = (-(tempVec.y * 0.5) + 0.5) * window.innerHeight;
+          teacher.domElement.root.style.left = `${x}px`;
+          teacher.domElement.root.style.top = `${y}px`;
+          teacher.domElement.root.style.display = 'flex';
         } else {
-          nextTurnFromModal();
+          teacher.domElement.root.style.display = 'none';
         }
-      } else if (e.code === 'Escape') {
-        closeResultModal();
-        closeRosterModal();
-        closeHistoryModal();
       }
+
+      // Học sinh
+      students.forEach(s => {
+        if (s.hasEnteredClass) {
+          s.domElement.root.style.display = 'none';
+          return;
+        }
+        s.model.mesh.getWorldPosition(tempVec);
+        tempVec.y += 3.2;
+        tempVec.project(camera);
+        if (tempVec.z < 1) {
+          const x = (tempVec.x * 0.5 + 0.5) * window.innerWidth;
+          const y = (-(tempVec.y * 0.5) + 0.5) * window.innerHeight;
+          s.domElement.root.style.left = `${x}px`;
+          s.domElement.root.style.top = `${y}px`;
+          s.domElement.root.style.display = 'flex';
+        } else {
+          s.domElement.root.style.display = 'none';
+        }
+      });
+    }
+
+    // Hiệu ứng âm thanh chân thực bằng Web Audio API
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playSound(type) {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'whistle') {
+        // Tiếng còi rượt đuổi
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1400, now);
+        osc.frequency.exponentialRampToValueAtTime(1800, now + 0.15);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.4);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.45);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      } else if (type === 'caught') {
+        // Tiếng tóm được học sinh
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.linearRampToValueAtTime(140, now + 0.35);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.35);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } else if (type === 'fanfare') {
+        // Fanfare mở sổ đầu bài
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+          const noteOsc = audioCtx.createOscillator();
+          const noteGain = audioCtx.createGain();
+          noteOsc.connect(noteGain);
+          noteGain.connect(audioCtx.destination);
+          noteOsc.type = 'sine';
+          noteOsc.frequency.setValueAtTime(freq, now + i * 0.1);
+          noteGain.gain.setValueAtTime(0.2, now + i * 0.1);
+          noteGain.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.4);
+          noteOsc.start(now + i * 0.1);
+          noteOsc.stop(now + i * 0.1 + 0.4);
+        });
+      }
+    }
+
+    // Logic Kịch Bản Rượt Đuổi (Thời gian dài, chạy vào cửa lớp, ai còn ngoài sân bị bắt)
+    function startChase() {
+      if (isChasing || students.length === 0) return;
+      isChasing = true;
+      playSound('whistle');
+
+      // Chọn số lượng bạn bị bắt theo dropdown
+      const caughtCount = Math.min(
+        parseInt(document.getElementById('select-caught-count').value, 10),
+        students.length
+      );
+
+      // Trộn ngẫu nhiên để chọn bạn bị bắt
+      const shuffledIndices = [...Array(students.length).keys()].sort(() => Math.random() - 0.5);
+      const caughtIndices = shuffledIndices.slice(0, caughtCount);
+
+      caughtStudentObjects = caughtIndices.map(idx => students[idx]);
+      caughtStudentIndexInList = 0;
+
+      showBubble(teacher.domElement, "ĐỨNG LẠI TRẢ BÀI MAU!", 2500);
+
+      // Toàn bộ học sinh bắt đầu chạy
+      students.forEach((s, idx) => {
+        s.isCaught = caughtIndices.includes(idx);
+        s.hasEnteredClass = false;
+
+        // Vị trí đích đến của Cửa Lớp An Toàn (X: -6 đến 6, Z: -18)
+        const safeTargetX = (Math.random() - 0.5) * 12;
+        const safeTargetZ = -18.5;
+
+        if (s.isCaught) {
+          // Bạn bị bắt: Chạy chậm hơn hoặc vấp ngã kẹt lại ngoài sân trường (Z khoảng 0 đến 12)
+          const stuckX = (Math.random() - 0.5) * 18;
+          const stuckZ = 2 + Math.random() * 10;
+
+          // Chạy loạng choạng ra giữa sân trong 6 giây rồi bị giữ chân lại
+          new TWEEN.Tween(s.model.mesh.position)
+            .to({ x: stuckX, z: stuckZ }, 6500)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start();
+
+          // Lời thoại hoảng loạn
+          setTimeout(() => {
+            showBubble(s.domElement, "Á á chân tui bị vấp rồi!!", 2500);
+          }, 2500);
+
+        } else {
+          // Các bạn an toàn: Chạy dồn dập vào cửa lớp an toàn trong 6 - 8.5 giây
+          const runDuration = 6000 + Math.random() * 2500;
+          
+          new TWEEN.Tween(s.model.mesh.position)
+            .to({ x: safeTargetX, z: safeTargetZ }, runDuration)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .onComplete(() => {
+              // Đã vào trong cửa lớp an toàn -> biến mất an toàn
+              s.hasEnteredClass = true;
+              s.model.mesh.visible = false;
+            })
+            .start();
+
+          // Lời thoại thở phào khi vào gần cửa
+          setTimeout(() => {
+            if (!s.isCaught) {
+              showBubble(s.domElement, "Cửa lớp kìa! Thoát rồi!!", 1800);
+            }
+          }, runDuration - 2500);
+        }
+      });
+
+      // Cô Giáo: Sau 1.5 giây định thần, cô cầm sổ rượt đuổi học sinh bị bắt ngoài sân
+      const targetStudent = caughtStudentObjects[0];
+
+      setTimeout(() => {
+        // Cô giáo lao tới mục tiêu bị bắt
+        new TWEEN.Tween(teacher.model.mesh.position)
+          .to({
+            x: targetStudent.model.mesh.position.x + 1.6,
+            z: targetStudent.model.mesh.position.z + 0.8
+          }, 6000)
+          .easing(TWEEN.Easing.Cubic.InOut)
+          .onUpdate(() => {
+            // Hướng mặt cô giáo về phía học sinh
+            teacher.model.mesh.lookAt(targetStudent.model.mesh.position);
+          })
+          .onComplete(() => {
+            // Đã tóm được học sinh ngoài sân trường!
+            playSound('caught');
+            showBubble(teacher.domElement, "BẮT ĐƯỢC EM RỒI NHÉ!", 2000);
+            showBubble(targetStudent.domElement, "Huhuhu em xin lỗi cô...", 2000);
+
+            // Zoom camera cận cảnh khoảnh khắc bắt được
+            new TWEEN.Tween(camera.position)
+              .to({
+                x: targetStudent.model.mesh.position.x,
+                y: 8,
+                z: targetStudent.model.mesh.position.z + 16
+              }, 1200)
+              .easing(TWEEN.Easing.Quadratic.Out)
+              .onComplete(() => {
+                // Sau khoảnh khắc zoom thì lật mở Sổ Đầu Bài
+                setTimeout(showNotebookModal, 1200);
+              })
+              .start();
+          })
+          .start();
+      }, 1500);
+
+      // Lời thoại ngẫu nhiên liên tục của cả lớp trong lúc chạy rượt đuổi
+      const shoutInterval = setInterval(() => {
+        if (!isChasing) {
+          clearInterval(shoutInterval);
+          return;
+        }
+        const activeStudents = students.filter(s => !s.hasEnteredClass);
+        if (activeStudents.length > 0) {
+          const randomS = activeStudents[Math.floor(Math.random() * activeStudents.length)];
+          const randomShout = CHAT_SHOUTS[Math.floor(Math.random() * CHAT_SHOUTS.length)];
+          showBubble(randomS.domElement, randomShout, 1500);
+        }
+      }, 900);
+    }
+
+    // Hiển thị Popup Sổ Đầu Bài (Đúng thiết kế ảnh 1)
+    function showNotebookModal() {
+      playSound('fanfare');
+      const student = caughtStudentObjects[caughtStudentIndexInList];
+      document.getElementById('turn-badge-txt').innerText = `⚡ LƯỢT ${currentTurn} ⚡`;
+      document.getElementById('student-name-txt').innerText = student.name;
+
+      renderNotebookAvatars();
+      document.getElementById('notebook-overlay').style.display = 'flex';
+    }
+
+    // Vẽ hình ảnh chibi cô giáo và học sinh trong sổ đầu bài bằng 2D canvas
+    function renderNotebookAvatars() {
+      // 1. Vẽ Cô giáo (Trang trái)
+      const tBox = document.getElementById('teacher-canvas-box');
+      tBox.innerHTML = '';
+      const c1 = document.createElement('canvas');
+      c1.width = 140; c1.height = 140;
+      const ctx1 = c1.getContext('2d');
+      drawChibi(ctx1, true, false);
+      tBox.appendChild(c1);
+
+      // 2. Vẽ Học sinh hốt hoảng toát mồ hôi (Trang phải)
+      const sBox = document.getElementById('student-canvas-box');
+      sBox.innerHTML = '';
+      const c2 = document.createElement('canvas');
+      c2.width = 140; c2.height = 140;
+      const ctx2 = c2.getContext('2d');
+      drawChibi(ctx2, false, true);
+      sBox.appendChild(c2);
+    }
+
+    function drawChibi(ctx, isTeacher, isSweating) {
+      ctx.clearRect(0, 0, 140, 140);
+      // Đầu
+      ctx.fillStyle = '#ffdfba';
+      ctx.beginPath();
+      ctx.arc(70, 52, 32, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tóc
+      ctx.fillStyle = isTeacher ? '#334155' : '#1e293b';
+      ctx.beginPath();
+      ctx.arc(70, 48, 34, Math.PI * 0.8, Math.PI * 2.2);
+      ctx.fill();
+
+      // Mắt
+      ctx.fillStyle = '#0f172a';
+      if (isSweating) {
+        // Mắt tròn xoe hốt hoảng
+        ctx.beginPath();
+        ctx.arc(60, 52, 5, 0, Math.PI * 2);
+        ctx.arc(80, 52, 5, 0, Math.PI * 2);
+        ctx.fill();
+        // Miệng há hốc lo sợ
+        ctx.beginPath();
+        ctx.ellipse(70, 68, 6, 8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+        // Giọt mồ hôi toát ra
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(92, 42, 5, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Mắt cô giáo tươi cười đeo kính
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#0f172a';
+        ctx.strokeRect(50, 46, 18, 12);
+        ctx.strokeRect(72, 46, 18, 12);
+        ctx.beginPath();
+        ctx.moveTo(68, 52); ctx.lineTo(72, 52);
+        ctx.stroke();
+      }
+
+      // Thân & Áo
+      ctx.fillStyle = isTeacher ? '#0284c7' : '#f59e0b';
+      ctx.beginPath();
+      ctx.roundRect(48, 88, 44, 40, 8);
+      ctx.fill();
+
+      // Cuốn sổ đỏ trên tay
+      if (isTeacher) {
+        ctx.fillStyle = '#991b1b';
+        ctx.fillRect(84, 80, 20, 26);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(88, 85, 12, 16);
+      }
+    }
+
+    // Đặt lại trạng thái để chơi hiệp tiếp theo
+    function resetForNextTurn() {
+      document.getElementById('notebook-overlay').style.display = 'none';
+
+      // Nếu còn bạn học sinh khác bị bắt cùng lượt (chế độ bắt 2, 3 bạn)
+      if (caughtStudentIndexInList < caughtStudentObjects.length - 1) {
+        caughtStudentIndexInList++;
+        showNotebookModal();
+        return;
+      }
+
+      currentTurn++;
+      isChasing = false;
+
+      // Đưa camera về vị trí ban đầu
+      new TWEEN.Tween(camera.position)
+        .to({ x: 0, y: 22, z: 68 }, 1000)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .start();
+
+      camera.lookAt(0, 7, -2);
+
+      // Phục hồi vị trí nhân vật
+      setupCharacters();
+    }
+
+    // Khởi tạo & Vòng lặp Animation (Chân tay đung đưa khi chạy)
+    buildSchoolEnvironment();
+    setupCharacters();
+
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      TWEEN.update();
+
+      // Hiệu ứng chạy rượt đuổi: Chân tay vung vẩy & nhấp nhô cơ thể
+      if (isChasing) {
+        // Chân tay học sinh
+        students.forEach(s => {
+          if (!s.hasEnteredClass) {
+            const runSpeed = 16;
+            s.model.leftLeg.rotation.x = Math.sin(time * runSpeed) * 0.7;
+            s.model.rightLeg.rotation.x = -Math.sin(time * runSpeed) * 0.7;
+            s.model.leftArm.rotation.x = -Math.sin(time * runSpeed) * 0.8;
+            s.model.rightArm.rotation.x = Math.sin(time * runSpeed) * 0.8;
+            s.model.mesh.position.y = Math.abs(Math.sin(time * runSpeed)) * 0.25;
+            
+            // Hướng mặt về hướng chạy
+            s.model.mesh.rotation.y = Math.PI; 
+          }
+        });
+
+        // Chân tay cô giáo
+        if (teacher) {
+          const tSpeed = 18;
+          teacher.model.leftLeg.rotation.x = Math.sin(time * tSpeed) * 0.8;
+          teacher.model.rightLeg.rotation.x = -Math.sin(time * tSpeed) * 0.8;
+          teacher.model.leftArm.rotation.x = -Math.sin(time * tSpeed) * 0.9;
+          teacher.model.rightArm.rotation.x = Math.sin(time * tSpeed) * 0.9;
+          teacher.model.mesh.position.y = Math.abs(Math.sin(time * tSpeed)) * 0.3;
+        }
+      } else {
+        // Trạng thái nghỉ ngơi
+        students.forEach(s => {
+          s.model.leftLeg.rotation.x = 0;
+          s.model.rightLeg.rotation.x = 0;
+          s.model.leftArm.rotation.x = 0;
+          s.model.rightArm.rotation.x = 0;
+          s.model.mesh.position.y = 0;
+          s.model.mesh.rotation.y = 0;
+        });
+        if (teacher) {
+          teacher.model.leftLeg.rotation.x = 0;
+          teacher.model.rightLeg.rotation.x = 0;
+          teacher.model.leftArm.rotation.x = 0;
+          teacher.model.rightArm.rotation.x = 0;
+          teacher.model.mesh.position.y = 0;
+        }
+      }
+
+      updateDOMTags();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Lắng nghe sự kiện người dùng
+    document.getElementById('btn-start-chase').addEventListener('click', startChase);
+    document.getElementById('btn-next-turn').addEventListener('click', resetForNextTurn);
+
+    // Mở Modal Quản Lý Danh Sách
+    document.getElementById('btn-edit-roster').addEventListener('click', () => {
+      document.getElementById('roster-textarea').value = studentList.join('\n');
+      document.getElementById('roster-modal').style.display = 'flex';
     });
 
-    /* Khởi chạy khi tài nguyên tải xong */
-    window.onload = function() {
-      initializeData();
-      init3D();
-      animate();
-    };
+    document.getElementById('btn-cancel-roster').addEventListener('click', () => {
+      document.getElementById('roster-modal').style.display = 'none';
+    });
+
+    document.getElementById('btn-save-roster').addEventListener('click', () => {
+      const text = document.getElementById('roster-textarea').value;
+      const list = text.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+      if (list.length > 0) {
+        studentList = list;
+        setupCharacters();
+      }
+      document.getElementById('roster-modal').style.display = 'none';
+    });
+
+    // Tự động căn chỉnh khi resize màn hình
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>
