@@ -90,6 +90,17 @@
       box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
     }
 
+    .class-badge .eliminated-pill {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1.5px solid #10b981;
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      display: none;
+    }
+
     /* Thanh HUD góc trên bên phải: Các nút điều khiển chuyên nghiệp */
     .top-right-hud {
       position: absolute;
@@ -610,6 +621,7 @@
       <span class="class-label">Lớp:</span>
       <span class="class-title" id="hud-class-name">10A1 - Cô Trà My</span>
       <span class="count-pill" id="hud-student-count">25 HS</span>
+      <span class="eliminated-pill" id="hud-eliminated-count">Đã gọi: 0</span>
     </div>
   </div>
 
@@ -655,7 +667,7 @@
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
         <polygon points="5 3 19 12 5 21 5 3"></polygon>
       </svg>
-      <span>Bắt đầu</span>
+      <span id="txt-start-btn">Bắt đầu</span>
     </button>
   </div>
 
@@ -784,6 +796,8 @@ let savedClasses = {
 };
 let className = "10A1 - Cô Trà My";
 let studentNames = [...savedClasses[className]];
+// Danh sách học sinh chưa bị bắt trong phiên hiện tại (chỉ khôi phục khi reload trang hoặc đổi danh sách lớp)
+let activeStudentNames = [...studentNames];
 let catchPerTurn = 1;
 let currentTurn = 1;
 let soundEnabled = true;
@@ -807,6 +821,8 @@ function loadSavedData() {
       className = firstClass;
       studentNames = [...savedClasses[firstClass]];
     }
+
+    activeStudentNames = [...studentNames];
 
     if (data.catchPerTurn) {
       catchPerTurn = parseInt(data.catchPerTurn, 10) || 1;
@@ -965,6 +981,9 @@ window.addEventListener('resize', () => {
   H = window.innerHeight;
   canvas.width = W;
   canvas.height = H;
+  if (gameState === 'IDLE') {
+    createStudents();
+  }
 });
 
 function getDoorPosition() {
@@ -994,7 +1013,30 @@ const teacher = {
 
 function createStudents() {
   students = [];
-  const total = studentNames.length;
+  const total = activeStudentNames.length;
+  const eliminatedCount = studentNames.length - total;
+
+  document.getElementById('hud-class-name').innerText = className;
+  const countPill = document.getElementById('hud-student-count');
+  const eliminatedPill = document.getElementById('hud-eliminated-count');
+
+  if (eliminatedCount === 0) {
+    countPill.innerText = `${total} HS`;
+    eliminatedPill.style.display = 'none';
+  } else {
+    countPill.innerText = `Còn ${total}/${studentNames.length} HS`;
+    eliminatedPill.innerText = `Đã gọi: ${eliminatedCount}`;
+    eliminatedPill.style.display = 'inline-block';
+  }
+
+  const startBtnTxt = document.getElementById('txt-start-btn');
+  if (total === 0) {
+    if (startBtnTxt) startBtnTxt.innerText = 'Đã gọi hết! Bấm để tải lại trang (F5)';
+    return;
+  } else {
+    if (startBtnTxt) startBtnTxt.innerText = 'Bắt đầu';
+  }
+
   const cols = Math.min(10, Math.ceil(Math.sqrt(total * 1.8)));
   const rows = Math.ceil(total / cols);
 
@@ -1015,7 +1057,7 @@ function createStudents() {
 
     students.push({
       id: i,
-      name: studentNames[i],
+      name: activeStudentNames[i],
       gender: i % 2 === 0 ? 'female' : 'male',
       hairStyle: i % 5,
       hairColor: ['#1e1b18', '#3e2723', '#27272a', '#451a03', '#1f2937'][i % 5],
@@ -1036,9 +1078,6 @@ function createStudents() {
       facing: 1
     });
   }
-
-  document.getElementById('hud-class-name').innerText = className;
-  document.getElementById('hud-student-count').innerText = `${total} HS`;
 }
 
 // =====================================================
@@ -1628,6 +1667,13 @@ function drawDroppedBook(ctx, book) {
 // =====================================================
 function startRunGame() {
   if (gameState !== 'IDLE') return;
+
+  // Nếu đã gọi hết toàn bộ học sinh trong danh sách thì bấm nút sẽ reload lại trang
+  if (activeStudentNames.length === 0) {
+    window.location.reload();
+    return;
+  }
+
   document.getElementById('start-btn-container').style.display = 'none';
 
   playSFX('scream');
@@ -1800,18 +1846,58 @@ function renderGame(now) {
     }
   });
 
+  // Nếu tất cả học sinh đã bị gọi hết, hiển thị thông báo trên sân trường
+  if (gameState === 'IDLE' && activeStudentNames.length === 0) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 3;
+    const boxW = Math.min(540, W * 0.88);
+    const boxH = 110;
+    ctx.beginPath();
+    ctx.roundRect(W * 0.5 - boxW / 2, H * 0.62 - boxH / 2, boxW, boxH, 20);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fef08a';
+    ctx.font = '900 22px "Be Vietnam Pro", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('ĐÃ GỌI HẾT DANH SÁCH HỌC SINH TRONG LỚP!', W * 0.5, H * 0.62 - 16);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 15px "Be Vietnam Pro", sans-serif';
+    ctx.fillText('Hãy tải lại trang (F5) hoặc bấm nút bên dưới để bắt đầu lại từ đầu.', W * 0.5, H * 0.62 + 20);
+    ctx.restore();
+  }
+
   requestAnimationFrame(renderGame);
 }
 
 // =====================================================
-// 7. HIỂN THỊ SỔ ĐẦU BÀI
+// 7. HIỂN THỊ SỔ ĐẦU BÀI & LOẠI TRỪ HỌC SINH ĐÃ BỊ BẮT
 // =====================================================
 function openNotebookModal() {
   playSFX('notebook');
   const victim = caughtQueue[caughtQueueIndex];
 
+  // Ngay khi học sinh bị ghi tên vào Sổ Đầu Bài, loại bạn đó khỏi danh sách còn lại
+  const idxInActive = activeStudentNames.indexOf(victim.name);
+  if (idxInActive !== -1) {
+    activeStudentNames.splice(idxInActive, 1);
+  }
+
   document.getElementById('nb-turn-text').innerText = `LƯỢT ${currentTurn}`;
   document.getElementById('nb-student-name').innerText = victim.name;
+
+  const btnNextTurn = document.getElementById('btn-next-turn');
+  if (caughtQueueIndex < caughtQueue.length - 1) {
+    btnNextTurn.innerText = `Xem bạn bị bắt tiếp theo (${caughtQueueIndex + 2}/${caughtQueue.length}) ➔`;
+  } else if (activeStudentNames.length === 0) {
+    btnNextTurn.innerText = 'Đã gọi hết cả lớp! Kết thúc ➔';
+  } else {
+    btnNextTurn.innerText = `Gọi Lượt Tiếp Theo (Còn ${activeStudentNames.length} HS) ➔`;
+  }
 
   const tCanvas = document.getElementById('nb-teacher-canvas');
   const tCtx = tCanvas.getContext('2d');
@@ -1846,6 +1932,7 @@ function openNotebookModal() {
 function nextTurnOrReset() {
   document.getElementById('notebook-overlay').style.display = 'none';
 
+  // Nếu trong lượt này bắt nhiều hơn 1 bạn thì hiển thị tiếp bạn tiếp theo trong hàng đợi
   if (caughtQueueIndex < caughtQueue.length - 1) {
     caughtQueueIndex++;
     currentTurn++;
@@ -1853,8 +1940,13 @@ function nextTurnOrReset() {
     return;
   }
 
+  caughtQueue = [];
   currentTurn++;
   resetToIdle();
+
+  if (activeStudentNames.length === 0) {
+    showToast("Đã gọi hết cả lớp! Hãy tải lại trang (F5) để bắt đầu lại.");
+  }
 }
 
 function resetToIdle() {
@@ -1873,7 +1965,11 @@ function resetToIdle() {
 // =====================================================
 document.getElementById('btn-start-run').addEventListener('click', startRunGame);
 document.getElementById('btn-next-turn').addEventListener('click', nextTurnOrReset);
-document.getElementById('btn-reset-game').addEventListener('click', resetToIdle);
+document.getElementById('btn-reset-game').addEventListener('click', () => {
+  // Nút Xếp hàng lại chỉ xếp lại những bạn CHƯA bị bắt
+  resetToIdle();
+  showToast(`Đã xếp hàng lại cho ${activeStudentNames.length} học sinh còn lại!`);
+});
 
 document.getElementById('btn-sound').addEventListener('click', () => {
   soundEnabled = !soundEnabled;
@@ -1897,86 +1993,89 @@ const inputCatchCount = document.getElementById('input-catch-count');
 const lblNumCount = document.getElementById('lbl-num-Count');
 const savedClassesListEl = document.getElementById('saved-classes-list');
 
-// Hiển thị các thẻ Lớp Học đã lưu trong máy
-function renderSavedClassChips() {
+function renderSavedClassesChips() {
   savedClassesListEl.innerHTML = '';
-  const classKeys = Object.keys(savedClasses);
-
-  classKeys.forEach(cName => {
+  Object.keys(savedClasses).forEach(clsName => {
     const chip = document.createElement('div');
-    chip.className = 'class-chip' + (cName === inputClassName.value.trim() ? ' active' : '');
+    chip.className = 'class-chip' + (clsName === className ? ' active' : '');
 
     const titleSpan = document.createElement('span');
-    const listLen = (savedClasses[cName] || []).length;
-    titleSpan.innerText = `${cName} (${listLen})`;
+    titleSpan.innerText = `${clsName} (${savedClasses[clsName].length})`;
     chip.appendChild(titleSpan);
 
-    // Nút xóa lớp nếu có nhiều hơn 1 lớp
-    if (classKeys.length > 1) {
+    if (Object.keys(savedClasses).length > 1) {
       const delBtn = document.createElement('span');
       delBtn.className = 'del-chip';
       delBtn.innerText = '×';
       delBtn.title = 'Xóa lớp này';
-      delBtn.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        delete savedClasses[cName];
-        const remaining = Object.keys(savedClasses);
-        if (className === cName) {
-          className = remaining[0];
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        delete savedClasses[clsName];
+        if (className === clsName) {
+          className = Object.keys(savedClasses)[0];
           studentNames = [...savedClasses[className]];
+          activeStudentNames = [...studentNames];
+          currentTurn = 1;
         }
-        inputClassName.value = className;
-        inputStudentList.value = studentNames.join('\n');
-        inputStudentCount.value = studentNames.length;
-        lblNumCount.innerText = studentNames.length;
-        saveToLocalStorage("Đã xóa lớp học!");
-        renderSavedClassChips();
+        populateSettingsForm();
+        saveToLocalStorage(`Đã xóa lớp ${clsName}`);
+        resetToIdle();
       });
       chip.appendChild(delBtn);
     }
 
     chip.addEventListener('click', () => {
-      // Lưu tạm lớp đang sửa trước khi chuyển
-      const curName = inputClassName.value.trim();
-      const curLines = inputStudentList.value.split('\n').map(s => s.trim()).filter(s => s.length > 0);
-      if (curName && curLines.length > 0) {
-        savedClasses[curName] = curLines;
-      }
-
-      className = cName;
-      studentNames = [...savedClasses[cName]];
-      inputClassName.value = className;
-      inputStudentList.value = studentNames.join('\n');
-      inputStudentCount.value = studentNames.length;
-      lblNumCount.innerText = studentNames.length;
-      renderSavedClassChips();
+      className = clsName;
+      studentNames = [...savedClasses[className]];
+      activeStudentNames = [...studentNames];
+      currentTurn = 1;
+      populateSettingsForm();
+      saveToLocalStorage(`Đã chuyển sang lớp ${className}`);
+      resetToIdle();
     });
 
     savedClassesListEl.appendChild(chip);
   });
 }
 
-document.getElementById('btn-new-class').addEventListener('click', () => {
-  const newIndex = Object.keys(savedClasses).length + 1;
-  const newName = `Lớp Mới ${newIndex}`;
-  savedClasses[newName] = SAMPLE_NAMES.slice(0, 25);
-  className = newName;
-  studentNames = [...savedClasses[newName]];
-
-  inputClassName.value = className;
-  inputStudentList.value = studentNames.join('\n');
-  inputStudentCount.value = studentNames.length;
-  lblNumCount.innerText = studentNames.length;
-  renderSavedClassChips();
-});
-
-document.getElementById('btn-open-settings').addEventListener('click', () => {
+function populateSettingsForm() {
   inputClassName.value = className;
   inputCatchCount.value = String(catchPerTurn);
   inputStudentCount.value = studentNames.length;
   lblNumCount.innerText = studentNames.length;
   inputStudentList.value = studentNames.join('\n');
-  renderSavedClassChips();
+  renderSavedClassesChips();
+}
+
+function adjustStudentListByCount(targetCount) {
+  targetCount = Math.max(2, Math.min(65, parseInt(targetCount, 10) || 25));
+  let lines = inputStudentList.value
+    .split('\n')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (lines.length > targetCount) {
+    lines = lines.slice(0, targetCount);
+  } else {
+    let sampleIdx = 0;
+    while (lines.length < targetCount) {
+      const candidate = SAMPLE_NAMES[sampleIdx % SAMPLE_NAMES.length];
+      if (!lines.includes(candidate)) {
+        lines.push(candidate);
+      } else {
+        lines.push(`Học sinh ${lines.length + 1}`);
+      }
+      sampleIdx++;
+    }
+  }
+
+  inputStudentCount.value = lines.length;
+  lblNumCount.innerText = lines.length;
+  inputStudentList.value = lines.join('\n');
+}
+
+document.getElementById('btn-open-settings').addEventListener('click', () => {
+  populateSettingsForm();
   settingsModal.style.display = 'flex';
 });
 
@@ -1984,36 +2083,25 @@ document.getElementById('btn-close-settings').addEventListener('click', () => {
   settingsModal.style.display = 'none';
 });
 
-function adjustStudentListByCount(newCount) {
-  newCount = Math.max(2, Math.min(65, parseInt(newCount, 10) || 25));
-  inputStudentCount.value = newCount;
-  lblNumCount.innerText = newCount;
+document.getElementById('btn-new-class').addEventListener('click', () => {
+  const newName = `Lớp mới ${Object.keys(savedClasses).length + 1}`;
+  className = newName;
+  studentNames = SAMPLE_NAMES.slice(0, 25);
+  activeStudentNames = [...studentNames];
+  savedClasses[className] = [...studentNames];
+  populateSettingsForm();
+  inputClassName.focus();
+  inputClassName.select();
+});
 
-  let currentLines = inputStudentList.value
-    .split('\n')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-
-  if (currentLines.length < newCount) {
-    for (let i = currentLines.length; i < newCount; i++) {
-      const sampleName = SAMPLE_NAMES[i % SAMPLE_NAMES.length];
-      currentLines.push(currentLines.includes(sampleName) ? `Học sinh ${i + 1}` : sampleName);
-    }
-  } else if (currentLines.length > newCount) {
-    currentLines = currentLines.slice(0, newCount);
-  }
-
-  inputStudentList.value = currentLines.join('\n');
-}
-
-inputStudentCount.addEventListener('input', (e) => {
+inputStudentCount.addEventListener('change', (e) => {
   adjustStudentListByCount(e.target.value);
 });
 
-document.querySelectorAll('.quick-btn[data-count]').forEach(btn => {
+document.querySelectorAll('.quick-count-btns .quick-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    const c = parseInt(btn.getAttribute('data-count'), 10);
-    adjustStudentListByCount(c);
+    const count = parseInt(btn.getAttribute('data-count'), 10);
+    adjustStudentListByCount(count);
   });
 });
 
@@ -2021,70 +2109,79 @@ inputStudentList.addEventListener('input', () => {
   const lines = inputStudentList.value
     .split('\n')
     .map(s => s.trim())
-    .filter(s => s.length > 0);
+    .filter(Boolean);
   inputStudentCount.value = lines.length;
   lblNumCount.innerText = lines.length;
 });
 
-// Nút Lưu Danh Sách & Áp Dụng (Lưu thẳng vào LocalStorage)
 document.getElementById('btn-save-settings').addEventListener('click', () => {
-  const newClass = inputClassName.value.trim() || "Lớp Học";
-  className = newClass;
-
-  catchPerTurn = parseInt(inputCatchCount.value, 10) || 1;
-
+  const newClassName = inputClassName.value.trim() || 'Lớp Học Vui Nhộn';
   const lines = inputStudentList.value
     .split('\n')
     .map(s => s.trim())
-    .filter(s => s.length > 0);
+    .filter(Boolean);
 
-  if (lines.length >= 1) {
-    studentNames = lines;
+  if (lines.length < 1) {
+    showToast('Vui lòng nhập ít nhất 1 học sinh!');
+    return;
   }
 
-  saveToLocalStorage("Đã lưu danh sách học sinh! Lần sau mở lên sẽ có sẵn.");
+  className = newClassName;
+  studentNames = lines;
+  activeStudentNames = [...studentNames];
+  catchPerTurn = parseInt(inputCatchCount.value, 10) || 1;
+  currentTurn = 1;
+
+  saveToLocalStorage('Đã lưu danh sách lớp & áp dụng!');
   settingsModal.style.display = 'none';
   resetToIdle();
 });
 
-// Xuất & Nhập file .txt dự phòng
-document.getElementById('btn-export-txt').addEventListener('click', () => {
-  const content = inputStudentList.value.trim();
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Danh_sach_${(inputClassName.value || 'Lop').replace(/\s+/g, '_')}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
+// Nhập / Xuất file .txt
+const fileImportInput = document.getElementById('file-import');
 document.getElementById('btn-import-txt').addEventListener('click', () => {
-  document.getElementById('file-import').click();
+  fileImportInput.click();
 });
 
-document.getElementById('file-import').addEventListener('change', (e) => {
+fileImportInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (ev) => {
-    const text = ev.target.result;
-    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(s => s.length > 0);
+    const content = ev.target.result;
+    const lines = content
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(Boolean);
     if (lines.length > 0) {
       inputStudentList.value = lines.join('\n');
       inputStudentCount.value = lines.length;
       lblNumCount.innerText = lines.length;
-      showToast(`Đã nạp ${lines.length} học sinh từ file!`);
+      showToast(`Đã tải ${lines.length} học sinh từ file .txt!`);
     }
   };
   reader.readAsText(file, 'UTF-8');
+  fileImportInput.value = '';
 });
 
-// Đảm bảo font Be Vietnam Pro đã tải xong trước khi vẽ Canvas lần đầu
-document.fonts.ready.then(() => {
+document.getElementById('btn-export-txt').addEventListener('click', () => {
+  const text = inputStudentList.value.trim();
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Danh-sach-${(inputClassName.value || 'lop').replace(/\s+/g, '_')}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// Khởi tạo ban đầu & chạy vòng lặp game
+window.onload = function () {
   createStudents();
   requestAnimationFrame(renderGame);
-});
+};
 </script>
 </body>
 </html>
