@@ -91,12 +91,12 @@
     }
 
     .class-badge .eliminated-pill {
-      background: rgba(16, 185, 129, 0.2);
+      background: rgba(16, 185, 129, 0.25);
       color: #34d399;
       border: 1.5px solid #10b981;
-      padding: 4px 10px;
+      padding: 4px 12px;
       border-radius: 10px;
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 800;
       display: none;
     }
@@ -159,6 +159,18 @@
       box-shadow: 0 6px 0 #92400e, 0 10px 22px rgba(217, 119, 6, 0.6);
     }
 
+    .hud-btn.restart-btn {
+      background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+      color: #ffffff;
+      border-color: #bae6fd;
+      box-shadow: 0 4px 0 #0369a1, 0 6px 18px rgba(2, 132, 199, 0.4);
+    }
+
+    .hud-btn.restart-btn:hover {
+      background: linear-gradient(180deg, #7dd3fc 0%, #0369a1 100%);
+      box-shadow: 0 6px 0 #0369a1, 0 10px 22px rgba(2, 132, 199, 0.55);
+    }
+
     /* Nút Bắt Đầu ở giữa phía dưới */
     #start-btn-container {
       position: absolute;
@@ -166,14 +178,16 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 25;
+      display: flex;
+      gap: 14px;
     }
 
     .btn-start-red {
       background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
       color: #ffffff;
       border: 3px solid #fecaca;
-      padding: 14px 48px;
-      font-size: 21px;
+      padding: 14px 44px;
+      font-size: 20px;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.8px;
@@ -190,6 +204,13 @@
     .btn-start-red:hover {
       transform: scale(1.06);
       filter: brightness(1.08);
+    }
+
+    .btn-start-green {
+      background: linear-gradient(180deg, #10b981 0%, #047857 100%);
+      border-color: #a7f3d0;
+      box-shadow: 0 6px 0 #064e3b, 0 12px 30px rgba(4, 120, 87, 0.7);
+      animation: pulseBtn 1.6s infinite;
     }
 
     @keyframes pulseBtn {
@@ -627,6 +648,14 @@
 
   <!-- Góc trên bên phải: Bộ nút bấm sắc nét bằng Vector SVG -->
   <div class="top-right-hud">
+    <button class="hud-btn restart-btn" id="btn-restart-all" title="Bắt đầu vòng mới và hồi phục lại toàn bộ học sinh">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+        <path d="M3 3v5h5"></path>
+      </svg>
+      <span>Bắt đầu lại</span>
+    </button>
+
     <button class="hud-btn primary" id="btn-open-settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -796,7 +825,7 @@ let savedClasses = {
 };
 let className = "10A1 - Cô Trà My";
 let studentNames = [...savedClasses[className]];
-// Danh sách học sinh chưa bị bắt trong phiên hiện tại (chỉ khôi phục khi reload trang hoặc đổi danh sách lớp)
+// Danh sách học sinh chưa bị bắt trong phiên hiện tại
 let activeStudentNames = [...studentNames];
 let catchPerTurn = 1;
 let currentTurn = 1;
@@ -832,7 +861,7 @@ function loadSavedData() {
   }
 }
 
-// Lưu dữ liệu vào trình duyệt để lần sau mở lên không cần nhập lại
+// Lưu dữ liệu vào trình duyệt
 function saveToLocalStorage(toastText = "Đã lưu danh sách học sinh cho các lần dùng sau!") {
   try {
     savedClasses[className] = [...studentNames];
@@ -934,6 +963,17 @@ function playSFX(type) {
       gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.09 + 0.35);
       osc.start(now + idx * 0.09); osc.stop(now + idx * 0.09 + 0.35);
     });
+  } else if (type === 'restart') {
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(f, now + idx * 0.07);
+      gain.gain.setValueAtTime(0.18, now + idx * 0.07);
+      gain.gain.linearRampToValueAtTime(0.001, now + idx * 0.07 + 0.2);
+      osc.start(now + idx * 0.07); osc.stop(now + idx * 0.07 + 0.2);
+    });
   }
 }
 
@@ -1011,6 +1051,17 @@ const teacher = {
   targetStudent: null
 };
 
+// Hàm bắt đầu lại vòng mới hoàn toàn
+function restartFullRoster() {
+  activeStudentNames = [...studentNames];
+  currentTurn = 1;
+  caughtQueue = [];
+  caughtQueueIndex = 0;
+  playSFX('restart');
+  resetToIdle();
+  showToast(`Đã bắt đầu vòng mới! Khôi phục đầy đủ ${studentNames.length} học sinh.`);
+}
+
 function createStudents() {
   students = [];
   const total = activeStudentNames.length;
@@ -1019,6 +1070,8 @@ function createStudents() {
   document.getElementById('hud-class-name').innerText = className;
   const countPill = document.getElementById('hud-student-count');
   const eliminatedPill = document.getElementById('hud-eliminated-count');
+  const startBtn = document.getElementById('btn-start-run');
+  const startBtnTxt = document.getElementById('txt-start-btn');
 
   if (eliminatedCount === 0) {
     countPill.innerText = `${total} HS`;
@@ -1029,12 +1082,19 @@ function createStudents() {
     eliminatedPill.style.display = 'inline-block';
   }
 
-  const startBtnTxt = document.getElementById('txt-start-btn');
   if (total === 0) {
-    if (startBtnTxt) startBtnTxt.innerText = 'Đã gọi hết! Bấm để tải lại trang (F5)';
+    if (startBtnTxt) startBtnTxt.innerText = 'Bắt đầu lại vòng mới';
+    if (startBtn) {
+      startBtn.classList.add('btn-start-green');
+      startBtn.classList.remove('btn-start-red');
+    }
     return;
   } else {
     if (startBtnTxt) startBtnTxt.innerText = 'Bắt đầu';
+    if (startBtn) {
+      startBtn.classList.add('btn-start-red');
+      startBtn.classList.remove('btn-start-green');
+    }
   }
 
   const cols = Math.min(10, Math.ceil(Math.sqrt(total * 1.8)));
@@ -1267,7 +1327,7 @@ function drawPalmRow(x1, y1, x2, y2, count) {
 }
 
 // =====================================================
-// 5. HÀM VẼ NHÂN VẬT ANIME CHIBI 2D (SẮC NÉT, FONT ĐẸP)
+// 5. HÀM VẼ NHÂN VẬT ANIME CHIBI 2D
 // =====================================================
 function drawChibiStudent(ctx, s, scale = 1) {
   ctx.save();
@@ -1668,9 +1728,9 @@ function drawDroppedBook(ctx, book) {
 function startRunGame() {
   if (gameState !== 'IDLE') return;
 
-  // Nếu đã gọi hết toàn bộ học sinh trong danh sách thì bấm nút sẽ reload lại trang
+  // Nếu đã gọi hết cả lớp, bấm nút sẽ khởi động lại vòng mới
   if (activeStudentNames.length === 0) {
-    window.location.reload();
+    restartFullRoster();
     return;
   }
 
@@ -1846,28 +1906,32 @@ function renderGame(now) {
     }
   });
 
-  // Nếu tất cả học sinh đã bị gọi hết, hiển thị thông báo trên sân trường
+  // Khi đã gọi hết toàn bộ học sinh
   if (gameState === 'IDLE' && activeStudentNames.length === 0) {
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
     ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 3;
-    const boxW = Math.min(540, W * 0.88);
-    const boxH = 110;
+    ctx.lineWidth = 3.5;
+    const boxW = Math.min(560, W * 0.9);
+    const boxH = 130;
     ctx.beginPath();
-    ctx.roundRect(W * 0.5 - boxW / 2, H * 0.62 - boxH / 2, boxW, boxH, 20);
+    ctx.roundRect(W * 0.5 - boxW / 2, H * 0.58 - boxH / 2, boxW, boxH, 22);
     ctx.fill();
     ctx.stroke();
 
     ctx.fillStyle = '#fef08a';
-    ctx.font = '900 22px "Be Vietnam Pro", sans-serif';
+    ctx.font = '900 23px "Be Vietnam Pro", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('ĐÃ GỌI HẾT DANH SÁCH HỌC SINH TRONG LỚP!', W * 0.5, H * 0.62 - 16);
+    ctx.fillText('🎉 ĐÃ GỌI HẾT TẤT CẢ HỌC SINH! 🎉', W * 0.5, H * 0.58 - 24);
 
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = '#e2e8f0';
     ctx.font = '700 15px "Be Vietnam Pro", sans-serif';
-    ctx.fillText('Hãy tải lại trang (F5) hoặc bấm nút bên dưới để bắt đầu lại từ đầu.', W * 0.5, H * 0.62 + 20);
+    ctx.fillText(`Cả lớp (${studentNames.length} học sinh) đều đã lên bảng trả bài.`, W * 0.5, H * 0.58 + 8);
+
+    ctx.fillStyle = '#34d399';
+    ctx.font = '800 14px "Be Vietnam Pro", sans-serif';
+    ctx.fillText('Bấm nút "Bắt đầu lại vòng mới" bên dưới để chơi lại từ đầu!', W * 0.5, H * 0.58 + 34);
     ctx.restore();
   }
 
@@ -1875,13 +1939,13 @@ function renderGame(now) {
 }
 
 // =====================================================
-// 7. HIỂN THỊ SỔ ĐẦU BÀI & LOẠI TRỪ HỌC SINH ĐÃ BỊ BẮT
+// 7. HIỂN THỊ SỔ ĐẦU BÀI & CƠ CHẾ LOẠI TRỪ (ELIMINATE)
 // =====================================================
 function openNotebookModal() {
   playSFX('notebook');
   const victim = caughtQueue[caughtQueueIndex];
 
-  // Ngay khi học sinh bị ghi tên vào Sổ Đầu Bài, loại bạn đó khỏi danh sách còn lại
+  // Loại trừ học sinh bị bắt khỏi danh sách active ngay khi mở sổ đầu bài
   const idxInActive = activeStudentNames.indexOf(victim.name);
   if (idxInActive !== -1) {
     activeStudentNames.splice(idxInActive, 1);
@@ -1894,7 +1958,7 @@ function openNotebookModal() {
   if (caughtQueueIndex < caughtQueue.length - 1) {
     btnNextTurn.innerText = `Xem bạn bị bắt tiếp theo (${caughtQueueIndex + 2}/${caughtQueue.length}) ➔`;
   } else if (activeStudentNames.length === 0) {
-    btnNextTurn.innerText = 'Đã gọi hết cả lớp! Kết thúc ➔';
+    btnNextTurn.innerText = 'Đã gọi hết cả lớp! Hoàn tất ➔';
   } else {
     btnNextTurn.innerText = `Gọi Lượt Tiếp Theo (Còn ${activeStudentNames.length} HS) ➔`;
   }
@@ -1932,7 +1996,7 @@ function openNotebookModal() {
 function nextTurnOrReset() {
   document.getElementById('notebook-overlay').style.display = 'none';
 
-  // Nếu trong lượt này bắt nhiều hơn 1 bạn thì hiển thị tiếp bạn tiếp theo trong hàng đợi
+  // Nếu còn học sinh khác bị bắt trong cùng 1 lượt
   if (caughtQueueIndex < caughtQueue.length - 1) {
     caughtQueueIndex++;
     currentTurn++;
@@ -1945,7 +2009,7 @@ function nextTurnOrReset() {
   resetToIdle();
 
   if (activeStudentNames.length === 0) {
-    showToast("Đã gọi hết cả lớp! Hãy tải lại trang (F5) để bắt đầu lại.");
+    showToast("Chúc mừng! Đã gọi hết toàn bộ học sinh trong lớp.");
   }
 }
 
@@ -1956,7 +2020,7 @@ function resetToIdle() {
   droppedShoe = null;
   droppedBook = null;
   document.getElementById('notebook-overlay').style.display = 'none';
-  document.getElementById('start-btn-container').style.display = 'block';
+  document.getElementById('start-btn-container').style.display = 'flex';
   createStudents();
 }
 
@@ -1965,10 +2029,20 @@ function resetToIdle() {
 // =====================================================
 document.getElementById('btn-start-run').addEventListener('click', startRunGame);
 document.getElementById('btn-next-turn').addEventListener('click', nextTurnOrReset);
+
+// Nút Bắt đầu lại (Restart) hồi phục lại toàn bộ sĩ số lớp
+document.getElementById('btn-restart-all').addEventListener('click', () => {
+  restartFullRoster();
+});
+
+// Nút Xếp hàng lại giữ nguyên danh sách học sinh chưa bị bắt
 document.getElementById('btn-reset-game').addEventListener('click', () => {
-  // Nút Xếp hàng lại chỉ xếp lại những bạn CHƯA bị bắt
-  resetToIdle();
-  showToast(`Đã xếp hàng lại cho ${activeStudentNames.length} học sinh còn lại!`);
+  if (activeStudentNames.length === 0) {
+    restartFullRoster();
+  } else {
+    resetToIdle();
+    showToast(`Đã xếp hàng lại cho ${activeStudentNames.length} học sinh còn lại!`);
+  }
 });
 
 document.getElementById('btn-sound').addEventListener('click', () => {
@@ -2177,7 +2251,7 @@ document.getElementById('btn-export-txt').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
-// Khởi tạo ban đầu & chạy vòng lặp game
+// Khởi tạo ban đầu & chạy game
 window.onload = function () {
   createStudents();
   requestAnimationFrame(renderGame);
